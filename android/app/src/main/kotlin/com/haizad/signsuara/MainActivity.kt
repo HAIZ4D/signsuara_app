@@ -1,4 +1,4 @@
-package com.example.signsuara_app
+package com.haizad.signsuara
 
 import io.flutter.embedding.android.FlutterActivity
 
