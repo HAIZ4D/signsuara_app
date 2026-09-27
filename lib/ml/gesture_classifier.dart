@@ -12,6 +12,7 @@ class GestureClassifier {
     this.onMotionSensor,
     this.labels = kLabels,
     this.score = signsuaraScore,
+    this.customMatch,
   });
 
   static const rowLength = 11; // thumb, index, middle, ring, pinky, yaw, pitch, roll, ax, ay, az
@@ -29,6 +30,10 @@ class GestureClassifier {
   final List<String> labels;
   final List<double> Function(List<double> features) score;
 
+  /// Custom gestures (step 8): returns a custom label when one matches; it then wins over the
+  /// model. All the rules below (2 in a row, no repeats, dead sensor) apply to it too.
+  final String? Function(List<double> features)? customMatch;
+
   final _buffer = ListQueue<List<double>>();
   var _rowCount = 0;
   String? _previous; // last prediction, null if not confident
@@ -44,7 +49,7 @@ class GestureClassifier {
       throw ArgumentError('Expected $rowLength values, got ${row.length}');
     }
 
-    final ok = !_isDead(row);
+    final ok = !isDeadRow(row);
     if (ok != _sensorOk) {
       _sensorOk = ok;
       onMotionSensor?.call(ok);
@@ -57,17 +62,13 @@ class GestureClassifier {
 
     // A dead BNO055 sends zeros, and the model gives confident WRONG answers on
     // zeros, so never predict while any row in the window is dead.
-    if (_buffer.any(_isDead)) {
+    if (_buffer.any(isDeadRow)) {
       _previous = null;
       return;
     }
 
-    final proba = score(extractFeatures(_buffer.toList()));
-    var best = 0;
-    for (var i = 1; i < proba.length; i++) {
-      if (proba[i] > proba[best]) best = i;
-    }
-    final label = proba[best] >= minConfidence ? labels[best] : null;
+    final features = extractFeatures(_buffer.toList());
+    final label = customMatch?.call(features) ?? _modelLabel(features);
 
     // Stability filter: the same confident label must win 2 predictions in a row.
     final stable = label != null && label == _previous;
@@ -78,6 +79,16 @@ class GestureClassifier {
     if (label != restLabel) onGesture(label);
   }
 
+  /// The built-in model's label, or null when it is not confident enough.
+  String? _modelLabel(List<double> features) {
+    final proba = score(features);
+    var best = 0;
+    for (var i = 1; i < proba.length; i++) {
+      if (proba[i] > proba[best]) best = i;
+    }
+    return proba[best] >= minConfidence ? labels[best] : null;
+  }
+
   /// yaw, pitch, roll, ax, ay, az all exactly 0 = the BNO055 has dropped out.
-  static bool _isDead(List<double> row) => row.skip(5).every((v) => v == 0);
+  static bool isDeadRow(List<double> row) => row.skip(5).every((v) => v == 0);
 }

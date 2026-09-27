@@ -4,6 +4,12 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SignSuara listens to the hearing person and shows what they say as text.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>SignSuara turns the hearing person's speech into text.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>SignSuara uses Bluetooth to connect to the smart glove.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Signsuara App</string>
 	<key>CFBundleExecutable</key>

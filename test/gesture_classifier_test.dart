@@ -19,6 +19,7 @@ class _Harness {
   final predictedAtRow = <int>[];
   var rows = 0;
   var proba = _rest;
+  String? customLabel; // what the fake custom matcher returns (null = no custom match)
 
   late final classifier = GestureClassifier(
     onGesture: announced.add,
@@ -27,6 +28,10 @@ class _Harness {
     score: (_) {
       predictedAtRow.add(rows);
       return proba;
+    },
+    customMatch: (_) {
+      if (customLabel != null) predictedAtRow.add(rows); // the model is skipped then
+      return customLabel;
     },
   );
 
@@ -151,6 +156,22 @@ void main() {
     h.feed(GestureClassifier.predictEvery, dead: true);
     h.predict(_x);
     expect(h.announced, isEmpty);
+  });
+
+  test('a custom gesture wins over the model and follows the same rules', () {
+    final h = _Harness()..customLabel = 'custom:1';
+    h.predict(_x); // model says X, but the custom gesture matches
+    expect(h.announced, isEmpty, reason: 'still needs 2 in a row');
+    h.predict(_x);
+    expect(h.announced, ['custom:1']);
+    h.predict(_x);
+    expect(h.announced, ['custom:1'], reason: 'no repeats');
+
+    h.customLabel = null; // no custom match any more: the model decides again
+    h
+      ..predict(_x)
+      ..predict(_x);
+    expect(h.announced, ['custom:1', 'X']);
   });
 
   test('a row with the wrong number of values is rejected', () {

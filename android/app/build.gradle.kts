@@ -7,8 +7,8 @@ plugins {
 
 android {
     namespace = "com.haizad.signsuara"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36 // flutter_tts compiles against 36
+    ndkVersion = "27.0.12077973" // wanted by flutter_blue_plus + flutter_tts
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -24,7 +24,7 @@ android {
         applicationId = "com.haizad.signsuara"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        minSdk = 24 // Android 7.0+, required by flutter_tts
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
