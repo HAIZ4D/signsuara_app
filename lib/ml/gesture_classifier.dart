@@ -4,7 +4,7 @@ import 'features.dart';
 import 'signsuara_model.dart';
 
 /// Turns raw glove rows into announced gestures, following the
-/// "Live prediction rules" in CLAUDE.md (same behaviour as live_v2.py).
+/// "Live prediction rules" in README.md (same behaviour as live_v2.py).
 /// Knows nothing about BLE: whoever reads the glove just calls [addRow].
 class GestureClassifier {
   GestureClassifier({
@@ -30,7 +30,7 @@ class GestureClassifier {
   final List<String> labels;
   final List<double> Function(List<double> features) score;
 
-  /// Custom gestures (step 8): returns a custom label when one matches; it then wins over the
+  /// Custom gestures: returns a custom label when one matches; it then wins over the
   /// model. All the rules below (2 in a row, no repeats, dead sensor) apply to it too.
   final String? Function(List<double> features)? customMatch;
 

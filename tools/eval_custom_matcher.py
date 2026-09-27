@@ -1,4 +1,4 @@
-# Tests the planned custom-gesture matcher (CLAUDE.md step 8) on the existing recordings.
+# Tests the planned custom-gesture matcher (README.md, "Custom gestures") on the existing recordings.
 # Read-only: imports C:\signsuara_ml\features.py and reads signsuara_data_v2.csv.
 #
 # Idea: pretend one built-in sign is a "custom gesture", enrol it from 5 random recordings,

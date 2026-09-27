@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../ml/gesture_classifier.dart';
 
 /// One BLE notification from the glove: "seq,thumb,index,...,az" as text
-/// (see "BLE protocol" in CLAUDE.md).
+/// (see "BLE protocol" in README.md).
 class GlovePacket {
   const GlovePacket(this.seq, this.row);
 
@@ -38,7 +38,7 @@ class GloveSession extends ChangeNotifier {
   List<double>? lastRow;
   int rows = 0, dropped = 0, badPackets = 0;
 
-  /// Custom-gesture matcher (step 8), asked before the built-in model. Set by the home page.
+  /// Custom-gesture matcher, asked before the built-in model. Set by the home page.
   String? Function(List<double> features)? customMatch;
 
   late GestureClassifier _classifier = _newClassifier();

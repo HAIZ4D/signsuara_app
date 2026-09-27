@@ -46,4 +46,22 @@ app.*.map.json
 
 # Project extras
 /coverage/
-.claude/settings.local.json
+flutter_*.png
+
+# Local AI assistant files (Claude Code): kept on this laptop only
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+
+# Secrets: never commit these
+.env
+.env.*
+*.jks
+*.keystore
+*.p12
+*.pem
+key.properties
+local.properties
+google-services.json
+GoogleService-Info.plist

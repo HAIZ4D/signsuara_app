@@ -44,4 +44,4 @@ for i, name in enumerate(FINGERS):
 
 # Bent vs straight is ~300 ADC counts, so a shift of a few counts doesn't matter to the model.
 print("\nRESULT:", "OK - BLE does not disturb the flex readings" if worst <= 15
-      else "SHIFT - BLE changes the readings, tell Claude")
+      else "SHIFT - BLE changes the readings, check wiring and power")

@@ -23,7 +23,7 @@ class SignWords {
       language == SpeechLanguage.malay ? malay : englishSpoken ?? english;
 }
 
-/// Label -> words. THE one place to add a word after training a new gesture (see CLAUDE.md).
+/// Label -> words. THE one place to add a word after training a new gesture (see README.md).
 /// Rest is not here: it is never announced, so never spoken.
 const kSignWords = <String, SignWords>{
   'A': SignWords('A', 'A'),

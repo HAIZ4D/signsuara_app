@@ -5,7 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'glove_session.dart';
 
 /// The only file that talks to Bluetooth: finds the glove, connects, and hands every
-/// notification to [GloveSession]. Name and UUIDs: see "BLE protocol" in CLAUDE.md.
+/// notification to [GloveSession]. Name and UUIDs: see "BLE protocol" in README.md.
 class GloveBle {
   GloveBle(this.session);
 

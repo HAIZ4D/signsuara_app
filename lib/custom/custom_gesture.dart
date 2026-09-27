@@ -4,7 +4,7 @@ import '../ml/features.dart';
 import '../ml/signsuara_model.dart';
 import '../speech/sign_words.dart';
 
-/// A gesture recorded on the phone, with its own phrase (CLAUDE.md step 8).
+/// A gesture recorded on the phone, with its own phrase (see "Custom gestures" in README.md).
 class CustomGesture {
   const CustomGesture({
     required this.id,

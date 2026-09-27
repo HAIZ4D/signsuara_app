@@ -3,7 +3,7 @@ import 'dart:math';
 import 'custom_gesture.dart';
 import 'reference_bank.dart';
 
-/// Recognises custom gestures (CLAUDE.md step 8). A custom gesture wins only when the live
+/// Recognises custom gestures (see "Custom gestures" in README.md). A custom gesture wins only when the live
 /// window is (1) inside that gesture's own limit AND (2) closer to its recordings than to ANY
 /// built-in example in the reference bank, including Rest. Otherwise the built-in model decides.
 /// Validated on the real recordings in tools/eval_custom_matcher.py (95% hits, 0.2% false).
