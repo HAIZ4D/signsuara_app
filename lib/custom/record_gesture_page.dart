@@ -1,19 +1,28 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
 import '../ml/gesture_classifier.dart';
 import '../speech/sign_words.dart';
+import '../theme/app_theme.dart';
+import '../ui/finger_bend.dart';
+import '../ui/widgets/brand.dart';
+import '../ui/widgets/glove_card.dart';
+import '../ui/widgets/gradient_button.dart';
+import '../ui/widgets/notice.dart';
 import 'custom_gesture.dart';
 import 'custom_gestures.dart';
 
 /// Create a custom gesture: phrase + Still/Moving, then 5 recordings of 3 s (like record_v2.py).
 class RecordGesturePage extends StatefulWidget {
-  const RecordGesturePage({super.key, required this.gestures, required this.session});
+  const RecordGesturePage({super.key, required this.gestures, required this.session, this.ble});
 
   final CustomGestures gestures;
   final GloveSession session;
+  final GloveBle? ble; // optional: lets the page offer a Connect button
 
   @override
   State<RecordGesturePage> createState() => _RecordGesturePageState();
@@ -152,89 +161,337 @@ class _RecordGesturePageState extends State<RecordGesturePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _session,
-      builder: (context, _) => Scaffold(
-        appBar: AppBar(title: const Text('New gesture')),
-        body: SafeArea(child: _recording ? _recordingView(context) : _form(context)),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: ListenableBuilder(
+        listenable: _session,
+        builder: (context, _) => Scaffold(
+          backgroundColor: AppColors.blue,
+          body: DecoratedBox(
+            decoration: const BoxDecoration(gradient: AppGradients.deep),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SheetHeader(recording: _recording),
+                Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    ),
+                    child: SafeArea(top: false, child: _recording ? _recordingView(context) : _form(context)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _form(BuildContext context) {
-    final text = Theme.of(context).textTheme;
     final canStart = _connected && _malay.text.trim().isNotEmpty;
+    final ble = widget.ble;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       children: [
+        const _Grip(),
+        Text('Teach a new gesture', style: AppText.section.copyWith(fontSize: 22)),
+        const SizedBox(height: 6),
+        Text(
+          'Give it a phrase, then sign it ${CustomGesture.recordingsNeeded} times. '
+          'Make it clearly different from the built-in signs.',
+          style: AppText.body.copyWith(color: AppColors.inkSoft),
+        ),
+        const SizedBox(height: 18),
         TextField(
           controller: _malay,
           onChanged: (_) => setState(() {}),
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(labelText: 'Phrase in Malay *', hintText: 'Saya lapar'),
+          style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 16),
+          decoration: _field('Phrase in Malay *', 'Saya lapar'),
         ),
         const SizedBox(height: 12),
         TextField(
           controller: _english,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(
-              labelText: 'Phrase in English (optional)', hintText: 'I am hungry'),
+          style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 16),
+          decoration: _field('Phrase in English (optional)', 'I am hungry'),
         ),
-        const SizedBox(height: 24),
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, icon: Icon(Icons.back_hand), label: Text('Still')),
-            ButtonSegment(value: true, icon: Icon(Icons.swipe), label: Text('Moving')),
-          ],
-          selected: {_moving},
-          onSelectionChanged: (choice) => setState(() => _moving = choice.first),
-        ),
+        const SizedBox(height: 20),
+        Text('How is it signed?', style: AppText.label.copyWith(color: AppColors.inkSoft)),
         const SizedBox(height: 8),
-        Text('Still = you hold a hand shape.  Moving = the gesture includes a movement.',
-            style: text.bodySmall),
-        const SizedBox(height: 24),
-        Text('You will do the gesture ${CustomGesture.recordingsNeeded} times: 3-2-1, then 3 seconds '
-            'of recording each time. Make it clearly different from the built-in signs.'),
+        Row(children: [
+          Expanded(
+            child: _KindOption(
+              icon: Icons.back_hand_rounded,
+              title: 'Still',
+              subtitle: 'You hold a hand shape',
+              selected: !_moving,
+              onTap: () => setState(() => _moving = false),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _KindOption(
+              icon: Icons.swipe_rounded,
+              title: 'Moving',
+              subtitle: 'It includes a movement',
+              selected: _moving,
+              onTap: () => setState(() => _moving = true),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 20),
+        const _StepsHint(total: CustomGesture.recordingsNeeded),
         if (_message.isNotEmpty) ...[
           const SizedBox(height: 16),
-          Text(_message, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+          Notice(message: _message),
         ],
-        const SizedBox(height: 24),
-        FilledButton.icon(
-          onPressed: canStart ? _record : null,
-          icon: const Icon(Icons.fiber_manual_record),
-          label: const Text('Start recording'),
+        const SizedBox(height: 20),
+        GradientButton(
+          label: 'Start recording',
+          icon: Icons.fiber_manual_record_rounded,
+          onTap: canStart ? _record : null,
         ),
         if (!_connected) ...[
-          const SizedBox(height: 8),
-          Text('Connect the glove first (on the main screen).',
-              textAlign: TextAlign.center, style: text.bodySmall),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text('Connect the glove first.',
+                    style: AppText.small.copyWith(color: AppColors.inkFaint, fontSize: 13)),
+              ),
+              if (ble != null) ...[
+                const SizedBox(width: 10),
+                GloveActionButton(link: _session.link, ble: ble),
+              ],
+            ],
+          ),
         ],
       ],
     );
   }
 
-  Widget _recordingView(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            '${'●' * _recordings.length}${'○' * (CustomGesture.recordingsNeeded - _recordings.length)}',
-            textAlign: TextAlign.center,
-            style: text.headlineSmall,
-          ),
-          const SizedBox(height: 32),
-          Text(_message, textAlign: TextAlign.center, style: text.headlineMedium),
-          const SizedBox(height: 32),
-          if (_progress != null) LinearProgressIndicator(value: _progress, minHeight: 12),
-          const SizedBox(height: 48),
-          OutlinedButton(onPressed: _cancel, child: const Text('Cancel')),
-        ],
-      ),
+  InputDecoration _field(String label, String hint) {
+    OutlineInputBorder border(Color color, double width) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      filled: true,
+      fillColor: AppColors.surface2,
+      border: border(AppColors.line, 1),
+      enabledBorder: border(AppColors.line, 1),
+      focusedBorder: border(AppColors.turq, 1.5),
     );
   }
+
+  Widget _recordingView(BuildContext context) {
+    final done = _recordings.length;
+    const total = CustomGesture.recordingsNeeded;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+      children: [
+        const _Grip(),
+        Text('Record gesture', style: AppText.section.copyWith(fontSize: 22)),
+        const SizedBox(height: 6),
+        Text(
+          _moving
+              ? 'Do the whole movement in the middle of the 3 seconds.'
+              : 'Hold the hand shape steady until the bar is full.',
+          style: AppText.body.copyWith(color: AppColors.inkSoft),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          height: 210,
+          decoration: BoxDecoration(gradient: AppGradients.stage, borderRadius: BorderRadius.circular(AppRadius.lg)),
+          foregroundDecoration: BoxDecoration(
+            gradient: AppGradients.stageGlow,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          alignment: Alignment.center,
+          child: HandSensor(bends: fingerBend(_session.lastRow), active: _connected, size: 150),
+        ),
+        const SizedBox(height: 16),
+        Semantics(
+          label: '$done of $total recordings done',
+          excludeSemantics: true,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < total; i++) ...[
+                if (i > 0) const SizedBox(width: 9),
+                AnimatedContainer(
+                  duration: AppMotion.medium,
+                  width: 36,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: i < done ? AppColors.turq : (i == done ? AppColors.yellow : AppColors.line),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        Semantics(
+          liveRegion: true,
+          child: Text(_message, textAlign: TextAlign.center, style: AppText.section.copyWith(fontSize: 20, height: 1.35)),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          height: 10,
+          child: _progress == null
+              ? null
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: _progress,
+                    minHeight: 10,
+                    color: AppColors.turq,
+                    backgroundColor: AppColors.surface2,
+                  ),
+                ),
+        ),
+        const SizedBox(height: 28),
+        OutlinedButton(
+          onPressed: _cancel,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.inkSoft,
+            side: const BorderSide(color: AppColors.line, width: 1.5),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+          ),
+          child: Text('Cancel', style: AppText.strong),
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  const _SheetHeader({required this.recording});
+
+  final bool recording;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.fromLTRB(16, MediaQuery.paddingOf(context).top + 10, 16, 16),
+        child: Row(children: [
+          if (!recording) ...[
+            Material(
+              color: AppColors.glass,
+              borderRadius: BorderRadius.circular(13),
+              child: InkWell(
+                onTap: () => Navigator.of(context).maybePop(),
+                borderRadius: BorderRadius.circular(13),
+                child: const SizedBox.square(
+                  dimension: 40,
+                  child: Icon(Icons.arrow_back_rounded, color: AppColors.onDark, semanticLabel: 'Back'),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+          ],
+          Text('New gesture', style: AppText.cardTitle),
+        ]),
+      );
+}
+
+class _Grip extends StatelessWidget {
+  const _Grip();
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Container(
+          width: 42,
+          height: 5,
+          margin: const EdgeInsets.only(bottom: 18),
+          decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(4)),
+        ),
+      );
+}
+
+/// Still / Moving choice card.
+class _KindOption extends StatelessWidget {
+  const _KindOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: selected,
+        label: '$title: $subtitle',
+        excludeSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: AnimatedContainer(
+              duration: AppMotion.fast,
+              padding: const EdgeInsets.all(AppSpace.m),
+              decoration: BoxDecoration(
+                color: selected ? AppColors.turq.withValues(alpha: 0.1) : AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: selected ? AppColors.turq : AppColors.line, width: 1.5),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: selected ? AppColors.turq : AppColors.inkFaint),
+                  const SizedBox(height: 6),
+                  Text(title, style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14.5)),
+                  Text(subtitle, style: AppText.small.copyWith(color: AppColors.inkFaint)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+/// "5 times: 3-2-1, then 3 s" explained with little bars.
+class _StepsHint extends StatelessWidget {
+  const _StepsHint({required this.total});
+
+  final int total;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.all(AppSpace.m),
+        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(AppRadius.md)),
+        child: Row(children: [
+          for (var i = 0; i < total; i++) ...[
+            if (i > 0) const SizedBox(width: 5),
+            Container(
+              width: 14,
+              height: 6,
+              decoration: BoxDecoration(color: AppColors.turq, borderRadius: BorderRadius.circular(3)),
+            ),
+          ],
+          const SizedBox(width: AppSpace.m),
+          Expanded(
+            child: Text('$total times: 3-2-1, then 3 seconds of signing',
+                style: AppText.small.copyWith(color: AppColors.inkSoft, fontSize: 12.5)),
+          ),
+        ]),
+      );
 }

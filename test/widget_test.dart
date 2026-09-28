@@ -7,6 +7,8 @@ import 'package:signsuara_app/custom/custom_gestures_page.dart';
 import 'package:signsuara_app/custom/record_gesture_page.dart';
 import 'package:signsuara_app/glove/glove_session.dart';
 import 'package:signsuara_app/main.dart';
+import 'package:signsuara_app/theme/app_theme.dart';
+import 'package:signsuara_app/ui/widgets/gradient_button.dart';
 
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
@@ -57,29 +59,37 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('My gestures: empty message, then the list with a delete button', (tester) async {
+  testWidgets('My gestures: real stats, empty message, then the list with a delete button', (tester) async {
     final gestures = CustomGestures();
-    await tester.pumpWidget(MaterialApp(home: CustomGesturesPage(gestures: gestures, session: GloveSession())));
+    await tester.pumpWidget(MaterialApp(
+        theme: buildAppTheme(), home: Scaffold(body: CustomGesturesPage(gestures: gestures, session: GloveSession()))));
+    expect(find.text('My Gestures'), findsOneWidget);
+    expect(find.text('Built-in signs'), findsOneWidget);
+    expect(find.text('5'), findsOneWidget, reason: 'A, B, Saya, Nama, Terima kasih');
+    expect(find.text('0 saved'), findsOneWidget);
     expect(find.textContaining('No custom gestures yet'), findsOneWidget);
     expect(find.textContaining('Terima kasih'), findsOneWidget, reason: 'built-in signs listed');
 
     await tester.runAsync(() => gestures.add(const CustomGesture(
         id: '1', malay: 'Saya lapar', english: 'I am hungry', moving: false, recordings: [])));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('1 saved'), findsOneWidget);
     expect(find.text('Saya lapar'), findsOneWidget);
-    expect(find.text('I am hungry · Still'), findsOneWidget);
+    expect(find.text('I am hungry'), findsOneWidget);
+    expect(find.text('Still'), findsOneWidget);
     expect(find.byTooltip('Delete'), findsOneWidget);
   });
 
   testWidgets('New gesture: recording needs a Malay phrase and a connected glove', (tester) async {
     await tester.pumpWidget(MaterialApp(
-        home: RecordGesturePage(gestures: CustomGestures(), session: GloveSession())));
-    expect(find.text('Connect the glove first (on the main screen).'), findsOneWidget);
+        theme: buildAppTheme(), home: RecordGesturePage(gestures: CustomGestures(), session: GloveSession())));
+    expect(find.text('Teach a new gesture'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).first, 'Saya lapar');
     await tester.pump();
-    final start = tester.widget<ButtonStyleButton>(find.ancestor(
-        of: find.text('Start recording'), matching: find.byWidgetPredicate((w) => w is ButtonStyleButton)));
-    expect(start.onPressed, isNull, reason: 'glove is not connected');
+    await tester.scrollUntilVisible(find.text('Connect the glove first.'), 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<GradientButton>(find.byType(GradientButton)).onTap, isNull,
+        reason: 'glove is not connected');
   });
 }

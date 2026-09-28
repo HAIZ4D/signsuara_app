@@ -44,10 +44,6 @@ class _AppShellState extends State<AppShell> {
 
   void _go(int tab) => setState(() => _tab = tab);
 
-  /// Old screens (until they are redesigned) get room for the floating nav.
-  Widget _legacy(Widget child) =>
-      Builder(builder: (context) => Padding(padding: EdgeInsets.only(bottom: AppSpace.navClearance(context)), child: child));
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,7 +62,7 @@ class _AppShellState extends State<AppShell> {
               ),
               ConversationScreen(services: services),
               HearingScreen(services: services),
-              _legacy(CustomGesturesPage(gestures: services.gestures, session: services.session)), // step 4
+              CustomGesturesPage(gestures: services.gestures, session: services.session, ble: services.ble),
               const LearnScreen(),
             ],
           ),

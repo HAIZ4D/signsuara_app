@@ -65,6 +65,12 @@ abstract final class AppGradients {
     colors: [AppColors.yellowSoft, AppColors.yellow, Color(0xFFF2A900)],
     stops: [0, 0.6, 1],
   );
+  static const sunCta = LinearGradient(
+    begin: Alignment(-1, -0.6),
+    end: Alignment(1, 0.6),
+    colors: [Color(0xFFFFE07A), AppColors.yellow, Color(0xFFF2A900)],
+    stops: [0, 0.5, 1],
+  );
   static const blueTile = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -186,6 +192,7 @@ abstract final class AppShadows {
   static const blueTile = [BoxShadow(color: Color(0xE6002B66), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
   static const nav = [BoxShadow(color: Color(0xA6001440), blurRadius: 40, spreadRadius: -14, offset: Offset(0, 22))];
   static const bubbleMe = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 24, spreadRadius: -14, offset: Offset(0, 12))];
+  static const sunCta = [BoxShadow(color: Color(0xE6F2A900), blurRadius: 36, spreadRadius: -18, offset: Offset(0, 22))];
   static const dock = [BoxShadow(color: Color(0xCC002B66), blurRadius: 40, spreadRadius: -18, offset: Offset(0, 20))];
 }
 
