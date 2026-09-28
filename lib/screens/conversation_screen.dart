@@ -9,6 +9,7 @@ import '../theme/app_theme.dart';
 import '../ui/finger_bend.dart';
 import '../ui/widgets/brand.dart';
 import '../ui/widgets/finger_bars.dart';
+import '../ui/widgets/glass_chip.dart';
 import '../ui/widgets/glove_card.dart';
 import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
@@ -79,7 +80,7 @@ class _Hero extends StatelessWidget {
                   ],
                 ),
               ),
-              _GlassChip(
+              GlassChip(
                 icon: Icons.language_rounded,
                 label: language.displayName,
                 tooltip: 'Speak in ${other.displayName} instead',
@@ -87,7 +88,7 @@ class _Hero extends StatelessWidget {
               ),
               if (services.log.messages.isNotEmpty) ...[
                 const SizedBox(width: AppSpace.s),
-                _GlassChip(
+                GlassChip(
                   icon: Icons.delete_sweep_rounded,
                   tooltip: 'Clear conversation',
                   onTap: services.log.clear,
@@ -125,42 +126,6 @@ class _Hero extends StatelessWidget {
       ),
     );
   }
-}
-
-class _GlassChip extends StatelessWidget {
-  const _GlassChip({required this.icon, required this.tooltip, required this.onTap, this.label});
-
-  final IconData icon;
-  final String? label;
-  final String tooltip;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Tooltip(
-        message: tooltip,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const StadiumBorder(),
-            child: Ink(
-              padding: EdgeInsets.symmetric(horizontal: label == null ? 9 : 12, vertical: 7),
-              decoration: BoxDecoration(
-                color: AppColors.glass,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(icon, size: 15, color: AppColors.onDark),
-                if (label != null) ...[
-                  const SizedBox(width: 6),
-                  Text(label!, style: AppText.label.copyWith(color: AppColors.onDark, fontSize: 12)),
-                ],
-              ]),
-            ),
-          ),
-        ),
-      );
 }
 
 /// "You" / "Them" card; lights up (turquoise for me, yellow for them) when that side is active.

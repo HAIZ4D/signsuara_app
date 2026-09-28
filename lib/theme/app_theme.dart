@@ -108,6 +108,20 @@ abstract final class AppGradients {
     radius: 0.75,
     colors: [Color(0x6113C6D6), Color(0x0013C6D6)],
   );
+  /// Border that slowly turns around the Hearing stage and the mic ring (design: conic border).
+  static const stageBorder = SweepGradient(colors: [
+    Color(0xF213C6D6),
+    Color(0xD9FFC82D),
+    Color(0x663B6FD1),
+    Color(0xF213C6D6),
+  ]);
+  static const micRing = SweepGradient(colors: [
+    AppColors.yellow,
+    Color(0x00FFC82D),
+    AppColors.turqBright,
+    Color(0x0013C6D6),
+    AppColors.yellow,
+  ], stops: [0, 0.35, 0.55, 0.8, 1]);
   static const finger = LinearGradient(
     begin: Alignment.bottomCenter,
     end: Alignment.topCenter,

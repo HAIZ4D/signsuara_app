@@ -45,9 +45,9 @@ void main() {
     expect(find.bySemanticsLabel('You sign'), findsOneWidget);
     expect(find.bySemanticsLabel('They speak'), findsOneWidget);
 
-    await openTab('Hearing'); // still the old screen until it is redesigned
-    expect(find.text('They said'), findsOneWidget);
-    expect(find.text('Tap to talk'), findsOneWidget);
+    await openTab('Hearing');
+    expect(find.text('HEARING MODE'), findsOneWidget);
+    expect(find.bySemanticsLabel('Tap to speak'), findsOneWidget);
 
     await openTab('Gestures');
     expect(find.textContaining('No custom gestures yet'), findsOneWidget);

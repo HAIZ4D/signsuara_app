@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../custom/custom_gestures_page.dart';
-import '../home_page.dart';
 import '../screens/conversation_screen.dart';
+import '../screens/hearing_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/learn_screen.dart';
 import '../screens/profile_screen.dart';
@@ -65,7 +65,7 @@ class _AppShellState extends State<AppShell> {
                 ),
               ),
               ConversationScreen(services: services),
-              _legacy(HomePage(services: services)), // Hearing: redesigned in step 3
+              HearingScreen(services: services),
               _legacy(CustomGesturesPage(gestures: services.gestures, session: services.session)), // step 4
               const LearnScreen(),
             ],

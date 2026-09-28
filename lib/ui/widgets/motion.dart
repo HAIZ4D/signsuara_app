@@ -283,6 +283,45 @@ class _FlowDotsState extends State<FlowDots> with SingleTickerProviderStateMixin
       );
 }
 
+/// Slowly turns its child forever (design: hmSpin / conic borders). Still when motion is reduced.
+class Spin extends StatefulWidget {
+  const Spin({super.key, required this.child, this.period = const Duration(seconds: 6), this.active = true});
+
+  final Widget child;
+  final Duration period;
+  final bool active;
+
+  @override
+  State<Spin> createState() => _SpinState();
+}
+
+class _SpinState extends State<Spin> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: widget.period);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(Spin old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() => widget.active && !AppMotion.reduced(context) ? _c.repeat() : _c.stop();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RotationTransition(turns: _c, child: widget.child);
+}
+
 /// Decorative animated bars (design: Waveform). Not a real audio level.
 class Waveform extends StatefulWidget {
   const Waveform({super.key, required this.color, this.bars = 26, this.height = 64, this.active = true});
