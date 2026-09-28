@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/custom/custom_gesture.dart';
 import 'package:signsuara_app/custom/gesture_store.dart';
@@ -36,6 +37,30 @@ class FakeAuthBackend implements AuthBackend {
 
   /// Makes the next rename fail.
   SignInFailure? renameFailure;
+
+  /// Makes the next photo change fail.
+  SignInFailure? photoFailure;
+  var photosUploaded = 0;
+
+  @override
+  Future<AppUser> setPhoto(Uint8List image) async {
+    if (photoFailure case final failure?) throw failure;
+    final user = currentUser!;
+    photosUploaded++;
+    return currentUser = AppUser(
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        photoUrl: 'https://example.com/photo-$photosUploaded.jpg',
+        customPhoto: true);
+  }
+
+  @override
+  Future<AppUser> useGooglePhoto() async {
+    if (photoFailure case final failure?) throw failure;
+    final user = currentUser!;
+    return currentUser = AppUser(uid: user.uid, name: user.name, email: user.email);
+  }
 
   @override
   Future<AppUser> rename(String name) async {

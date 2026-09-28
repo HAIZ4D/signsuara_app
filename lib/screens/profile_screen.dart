@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../app/app_services.dart';
 import '../cloud/account.dart';
@@ -18,12 +20,24 @@ import '../ui/widgets/notice.dart';
 import '../ui/widgets/user_avatar.dart';
 import 'history_screen.dart';
 
+/// Opens the camera or the gallery; the photo (at most 800 px) as JPEG/PNG bytes, or null.
+typedef PhotoPicker = Future<Uint8List?> Function(ImageSource source);
+
+Future<Uint8List?> _pickWithImagePicker(ImageSource source) async {
+  final file = await ImagePicker().pickImage(source: source, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+  return file?.readAsBytes();
+}
+
+enum _PhotoChoice { camera, gallery, google }
+
 /// Profile & settings (design: screens3.jsx ProfileScreen). Only real settings and numbers:
-/// glove, speech language and voice, conversation history, gesture backup, account, about.
+/// photo and name, glove, speech language and voice, conversation history, gesture backup,
+/// account, about.
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key, required this.services});
+  const ProfileScreen({super.key, required this.services, this.pickPhoto = _pickWithImagePicker});
 
   final AppServices services;
+  final PhotoPicker pickPhoto; // tests pass a fake
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +51,7 @@ class ProfileScreen extends StatelessWidget {
           return ListView(
             padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, AppSpace.xxl),
             children: [
-              _Header(services: services),
+              _Header(services: services, onChangePhoto: account.signedIn ? () => _changePhoto(context) : null),
               _Stats(services: services),
               _Group(rows: [
                 _gloveRow(),
@@ -145,6 +159,55 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _changePhoto(BuildContext context) async {
+    final account = services.account;
+    final messenger = ScaffoldMessenger.of(context);
+    final choice = await showModalBottomSheet<_PhotoChoice>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded, color: AppColors.turq),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(sheet, _PhotoChoice.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded, color: AppColors.turq),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(sheet, _PhotoChoice.gallery),
+            ),
+            if (account.user?.customPhoto ?? false)
+              ListTile(
+                leading: const Icon(Icons.account_circle_rounded, color: AppColors.turq),
+                title: const Text('Use my Google photo'),
+                onTap: () => Navigator.pop(sheet, _PhotoChoice.google),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (choice == null) return;
+    final bool saved;
+    if (choice == _PhotoChoice.google) {
+      saved = await account.useGooglePhoto();
+    } else {
+      final Uint8List? image;
+      try {
+        image = await pickPhoto(choice == _PhotoChoice.camera ? ImageSource.camera : ImageSource.gallery);
+      } catch (e) {
+        debugPrint('Photo picker: $e');
+        messenger.showSnackBar(const SnackBar(content: Text('Could not open the camera or gallery.')));
+        return;
+      }
+      if (image == null) return; // closed without choosing
+      saved = await account.setPhoto(image);
+    }
+    if (!saved && account.error != null) messenger.showSnackBar(SnackBar(content: Text(account.error!)));
+  }
+
   _Row _nameRow(BuildContext context) => _Row(
         icon: Icons.badge_outlined,
         title: 'Your name',
@@ -209,20 +272,64 @@ class ProfileScreen extends StatelessWidget {
       );
 }
 
-/// Photo or initial, name, email (design: .prof-hero).
+/// Round photo (camera badge = change it, signed in only), name, email (design: .prof-hero).
 class _Header extends StatelessWidget {
-  const _Header({required this.services});
+  const _Header({required this.services, required this.onChangePhoto});
 
   final AppServices services;
+  final VoidCallback? onChangePhoto;
+
+  static const _size = 96.0;
 
   @override
   Widget build(BuildContext context) {
     final account = services.account;
+    final photo = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        DecoratedBox(
+          decoration: const BoxDecoration(shape: BoxShape.circle, boxShadow: AppShadows.card),
+          child: UserAvatar(
+              name: account.name, photoUrl: account.user?.photoUrl, size: _size, ring: AppColors.surface, ringWidth: 3),
+        ),
+        if (account.busy)
+          const Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.chipOnStage),
+              child: Center(child: CircularProgressIndicator(color: AppColors.onDark, strokeWidth: 3)),
+            ),
+          ),
+        if (onChangePhoto != null)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppGradients.turq,
+                border: Border.all(color: AppColors.surface, width: 2.5),
+              ),
+              child: const Icon(Icons.photo_camera_rounded, size: 16, color: AppColors.onDark),
+            ),
+          ),
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(0, AppSpace.s, 0, AppSpace.l),
       child: Column(
         children: [
-          UserAvatar(name: account.name, photoUrl: account.user?.photoUrl, size: 84),
+          if (onChangePhoto case final change?)
+            Semantics(
+              container: true, // its own button for screen readers, not merged with the name
+              button: true,
+              label: 'Change your photo',
+              excludeSemantics: true,
+              child: GestureDetector(onTap: account.busy ? null : change, child: photo),
+            )
+          else
+            photo,
           const SizedBox(height: 14),
           Text(account.name, textAlign: TextAlign.center, style: AppText.section.copyWith(fontSize: 23)),
           const SizedBox(height: AppSpace.xxs),

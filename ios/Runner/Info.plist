@@ -10,6 +10,10 @@
 	<string>SignSuara turns the hearing person's speech into text.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
 	<string>SignSuara uses Bluetooth to connect to the smart glove.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>SignSuara lets you take a new profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SignSuara lets you choose a profile photo from your gallery.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Signsuara App</string>
 	<key>CFBundleExecutable</key>

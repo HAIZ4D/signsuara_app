@@ -16,7 +16,7 @@ Universiti Putra Malaysia (UPM).
   **conversation history** (read back or delete past conversations) and **backs up your custom
   gestures** (they come back after a reinstall or on a new phone). Guests can use everything on
   the phone; their conversations are kept until the app closes.
-- **Profile & settings**: your name (change it when signed in), glove connection, speech
+- **Profile & settings**: your name and photo (change them when signed in), glove connection, speech
   language, voice test, conversation history (count, clear all), gesture backup (check now),
   Google account, about and licences. Home greets you by time of day ("Good morning", …).
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
@@ -143,7 +143,7 @@ other recordings.
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 119 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 123 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -188,9 +188,29 @@ Firebase project:
    }
    ```
 
+6. **Storage** (profile photos): Firebase console → Storage → get started. Cloud Storage needs
+   the Blaze (pay-as-you-go) plan; a profile photo is small (at most 800 px, well inside the free
+   quota). Rules: each user may only use their own folder, images under 5 MB:
+   ```
+   rules_version = '2';
+   service firebase.storage {
+     match /b/{bucket}/o {
+       match /users/{uid}/{allPaths=**} {
+         allow read, delete: if request.auth != null && request.auth.uid == uid;
+         allow create, update: if request.auth != null && request.auth.uid == uid
+           && request.resource.size < 5 * 1024 * 1024
+           && request.resource.contentType.matches('image/.*');
+       }
+     }
+   }
+   ```
+
 Saved per user:
-- `users/{uid}`: name, email, photo link, first and last sign-in time, and `username` when the
-  name was changed in Profile (the app puts it back if a later Google sign-in resets the name).
+- `users/{uid}`: name, email, photo link, first and last sign-in time, `username` when the name
+  was changed in Profile and `customPhotoUrl` when the photo was (the app puts them back if a later
+  Google sign-in resets them).
+- Storage `users/{uid}/photos/<time>.jpg`: the chosen profile photo (a new file each change; the
+  previous one is deleted).
 - `users/{uid}/conversations/{id}`: `startedAt`, `updatedAt` and `messages`, a list of
   `{who: "me", label, malay, english, at}` (a sign, with its words at that moment) or
   `{who: "them", text, at}` (heard words). A conversation starts with the first message after
@@ -235,4 +255,6 @@ never hardcodes the labels, the number of classes or the window size.
 | `shared_preferences` | saved data | BSD-3-Clause |
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
 | `google_sign_in` | Google account picker | BSD-3-Clause |
+| `firebase_storage` | profile photos | BSD-3-Clause |
+| `image_picker` | take or choose a profile photo | Apache-2.0 / BSD-3-Clause |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

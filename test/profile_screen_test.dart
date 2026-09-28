@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
 import 'package:signsuara_app/app/font_licences.dart';
@@ -11,13 +12,18 @@ import 'package:signsuara_app/theme/app_theme.dart';
 
 import 'fake_auth_backend.dart';
 
-Future<AppServices> _pumpProfile(WidgetTester tester, {Account? account}) async {
+Future<AppServices> _pumpProfile(WidgetTester tester, {Account? account, PhotoPicker? pickPhoto}) async {
   tester.view.physicalSize = const Size(1080, 2400); // a phone: 360 x 800
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
   final services = AppServices(account: account ?? Account(FakeAuthBackend()));
   addTearDown(services.dispose);
-  await tester.pumpWidget(MaterialApp(theme: buildAppTheme(), home: ProfileScreen(services: services)));
+  await tester.pumpWidget(MaterialApp(
+    theme: buildAppTheme(),
+    home: pickPhoto == null
+        ? ProfileScreen(services: services)
+        : ProfileScreen(services: services, pickPhoto: pickPhoto),
+  ));
   return services;
 }
 
@@ -113,6 +119,49 @@ void main() {
     await services.account.signOut();
     await _settle(tester);
     expect(find.byTooltip('Change your name'), findsNothing);
+  });
+
+  testWidgets('signed in: change the photo from the gallery, then back to the Google photo', (tester) async {
+    final semantics = tester.ensureSemantics();
+    ImageSource? asked;
+    final services = await _pumpProfile(tester,
+        account: Account(FakeAuthBackend(currentUser: testUser)),
+        pickPhoto: (source) async => Uint8List.fromList([0xFF, 0xD8, 0xFF, (asked = source).index]));
+
+    await tester.tap(find.bySemanticsLabel('Change your photo'));
+    await _settle(tester);
+    expect(find.text('Take a photo'), findsOneWidget);
+    expect(find.text('Use my Google photo'), findsNothing, reason: 'nothing to go back to yet');
+    await tester.tap(find.text('Choose from gallery'));
+    await _settle(tester);
+    expect(asked, ImageSource.gallery);
+    expect(services.account.user?.customPhoto, isTrue);
+
+    await tester.tap(find.bySemanticsLabel('Change your photo'));
+    await _settle(tester);
+    await tester.tap(find.text('Use my Google photo'));
+    await _settle(tester);
+    expect(services.account.user?.customPhoto, isFalse);
+    semantics.dispose();
+  });
+
+  testWidgets('a failed photo change says why; a guest cannot change the photo', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final backend = FakeAuthBackend(currentUser: testUser)
+      ..photoFailure = const SignInFailure('No internet connection. The photo was not changed.');
+    final account = Account(backend);
+    await _pumpProfile(tester, account: account, pickPhoto: (_) async => Uint8List(4));
+
+    await tester.tap(find.bySemanticsLabel('Change your photo'));
+    await _settle(tester);
+    await tester.tap(find.text('Take a photo'));
+    await _settle(tester);
+    expect(find.text('No internet connection. The photo was not changed.'), findsWidgets);
+
+    await account.signOut();
+    await _settle(tester);
+    expect(find.bySemanticsLabel('Change your photo'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('About opens with the project name', (tester) async {

@@ -166,14 +166,14 @@ class _Greeting extends StatelessWidget {
           excludeSemantics: true, // just "Profile", not the letter inside the avatar
           child: InkWell(
             onTap: onAvatar,
-            borderRadius: BorderRadius.circular(17),
+            customBorder: const CircleBorder(),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
                 UserAvatar(name: name, photoUrl: photoUrl),
                 Positioned(
-                  right: -3,
-                  top: -3,
+                  right: 0,
+                  top: 0,
                   child: Container(
                     width: 12,
                     height: 12,

@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signsuara_app/cloud/account.dart';
+import 'package:signsuara_app/ui/widgets/user_avatar.dart';
 
 import 'fake_auth_backend.dart';
 
@@ -56,6 +59,29 @@ void main() {
     expect(await account.rename('Zad'), isFalse);
     expect(account.error, contains('No internet'));
     expect(account.name, 'Haizad');
+  });
+
+  test('a signed-in user can set a photo, and go back to the Google one', () async {
+    final backend = FakeAuthBackend(currentUser: testUser);
+    final account = Account(backend);
+    expect(await account.setPhoto(Uint8List.fromList([0xFF, 0xD8, 0xFF])), isTrue);
+    expect(account.user?.photoUrl, 'https://example.com/photo-1.jpg');
+    expect(account.user?.customPhoto, isTrue);
+
+    expect(await account.useGooglePhoto(), isTrue);
+    expect(account.user?.customPhoto, isFalse);
+
+    backend.photoFailure = const SignInFailure('No internet connection. The photo was not changed.');
+    expect(await account.setPhoto(Uint8List(3)), isFalse);
+    expect(account.error, contains('No internet'));
+    expect(await Account(FakeAuthBackend()).setPhoto(Uint8List(3)), isFalse, reason: 'guest');
+  });
+
+  test('Google photo links are asked for in a sharp size; other links stay as they are', () {
+    expect(UserAvatar.sharper('https://lh3.googleusercontent.com/a/abc=s96-c', 288),
+        'https://lh3.googleusercontent.com/a/abc=s288-c');
+    expect(UserAvatar.sharper('https://firebasestorage.googleapis.com/v0/b/x/o/p.jpg?alt=media', 288),
+        'https://firebasestorage.googleapis.com/v0/b/x/o/p.jpg?alt=media');
   });
 
   test('a guest has no name to change', () async {

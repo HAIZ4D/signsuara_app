@@ -5,15 +5,24 @@ import '../history/history_store.dart';
 
 /// A signed-in Google user: only what the app shows and saves (no tokens).
 class AppUser {
-  const AppUser({required this.uid, required this.name, required this.email, this.photoUrl});
+  const AppUser({
+    required this.uid,
+    required this.name,
+    required this.email,
+    this.photoUrl,
+    this.customPhoto = false,
+  });
 
   final String uid;
   final String name;
   final String email;
   final String? photoUrl;
+
+  /// True when the photo was chosen in Profile (not the Google account's own).
+  final bool customPhoto;
 }
 
-/// Why sign-in (or changing the name) didn't work, already in plain words for the screen.
+/// Why sign-in (or changing the name or photo) didn't work, already in plain words for the screen.
 class SignInFailure implements Exception {
   const SignInFailure(this.message);
 
@@ -31,6 +40,12 @@ abstract class AuthBackend {
 
   /// Changes the name the app shows for the signed-in user. Throws [SignInFailure].
   Future<AppUser> rename(String name);
+
+  /// Saves [image] (JPEG or PNG) as the signed-in user's photo. Throws [SignInFailure].
+  Future<AppUser> setPhoto(Uint8List image);
+
+  /// Goes back to the Google account's own photo. Throws [SignInFailure].
+  Future<AppUser> useGooglePhoto();
 
   /// Where this user's conversations are kept.
   HistoryStore historyFor(AppUser user);
@@ -108,20 +123,33 @@ class Account extends ChangeNotifier {
   static const maxNameLength = 30;
 
   /// Signed in only: changes the name shown on Home and in Profile. True when it was saved.
-  Future<bool> rename(String name) async {
-    final backend = _backend;
+  Future<bool> rename(String name) {
     final clean = name.trim();
-    if (backend == null || _user == null || clean.isEmpty || clean.length > maxNameLength) return false;
+    if (clean.isEmpty || clean.length > maxNameLength) return Future.value(false);
+    return _update((b) => b.rename(clean), 'The name could not be changed. Check the internet and try again.');
+  }
+
+  /// Signed in only: a new profile photo (JPEG or PNG). True when it was saved.
+  Future<bool> setPhoto(Uint8List image) =>
+      _update((b) => b.setPhoto(image), 'The photo could not be changed. Check the internet and try again.');
+
+  /// Signed in only: back to the Google account's own photo.
+  Future<bool> useGooglePhoto() =>
+      _update((b) => b.useGooglePhoto(), 'The photo could not be changed. Check the internet and try again.');
+
+  Future<bool> _update(Future<AppUser> Function(AuthBackend backend) change, String failed) async {
+    final backend = _backend;
+    if (backend == null || _user == null) return false;
     _busy = true;
     _error = null;
     notifyListeners();
     try {
-      _user = await backend.rename(clean);
+      _user = await change(backend);
     } on SignInFailure catch (e) {
       _error = e.message;
     } catch (e) {
-      _error = 'The name could not be changed. Check the internet and try again.';
-      debugPrint('Rename failed: $e');
+      _error = failed;
+      debugPrint('Account change failed: $e');
     }
     _busy = false;
     notifyListeners();
