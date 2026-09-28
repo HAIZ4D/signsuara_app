@@ -128,6 +128,14 @@ class CustomGesturesPage extends StatelessWidget {
   }
 }
 
+/// Icon and colour for a backup state (also used in Profile).
+(IconData, Color) backupLook(BackupState state) => switch (state) {
+      BackupState.off => (Icons.cloud_off_rounded, AppColors.inkFaint),
+      BackupState.checking => (Icons.cloud_sync_rounded, AppColors.inkFaint),
+      BackupState.done => (Icons.cloud_done_rounded, AppColors.turq),
+      BackupState.failed => (Icons.cloud_off_rounded, AppColors.warning),
+    };
+
 /// Whether the custom gestures are backed up to the Google account, in plain words.
 class _BackupLine extends StatelessWidget {
   const _BackupLine({required this.backup});
@@ -136,18 +144,8 @@ class _BackupLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final restored = backup.restored;
-    final (icon, color, text) = switch (backup.state) {
-      BackupState.off => (Icons.cloud_off_rounded, AppColors.inkFaint,
-          'Not backed up: sign in (Profile) to keep your gestures in your Google account.'),
-      BackupState.checking => (Icons.cloud_sync_rounded, AppColors.inkFaint, 'Checking the backup in your account…'),
-      BackupState.done => (Icons.cloud_done_rounded, AppColors.turq,
-          restored > 0
-              ? 'Backed up to your Google account. $restored brought back from it.'
-              : 'Backed up to your Google account.'),
-      BackupState.failed => (Icons.cloud_off_rounded, AppColors.warning,
-          'Backup did not work (internet?). Your gestures are still on this phone.'),
-    };
+    final (icon, color) = backupLook(backup.state);
+    final text = backup.summary;
     return Semantics(
       liveRegion: true,
       child: Row(

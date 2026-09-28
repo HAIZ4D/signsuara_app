@@ -24,11 +24,25 @@ class GestureBackup extends ChangeNotifier {
   var _state = BackupState.off;
   var _restored = 0;
   var _started = false;
+  DateTime? _checkedAt;
 
   BackupState get state => _state;
 
+  /// When the phone and the account were last compared successfully.
+  DateTime? get checkedAt => _checkedAt;
+
   /// Gestures brought back from the account at the last sign-in.
   int get restored => _restored;
+
+  /// The state in plain words, for the Gestures tab and Profile.
+  String get summary => switch (_state) {
+        BackupState.off => 'Not backed up: sign in to keep your gestures in your Google account.',
+        BackupState.checking => 'Checking the backup in your account…',
+        BackupState.done => _restored > 0
+            ? 'Backed up to your Google account. $_restored brought back from it.'
+            : 'Backed up to your Google account.',
+        BackupState.failed => 'Backup did not work (internet?). Your gestures are still on this phone.',
+      };
 
   /// Call once the phone's own gestures are loaded, so loading can't undo a restore.
   void start() {
@@ -39,6 +53,15 @@ class GestureBackup extends ChangeNotifier {
     _useAccount();
   }
 
+  /// Compare the phone and the account again now (e.g. after a failed backup).
+  Future<void> syncNow() async {
+    final store = _store;
+    if (store == null) return;
+    _state = BackupState.checking;
+    notifyListeners();
+    await _sync(store);
+  }
+
   void _useAccount() {
     final store = account.gestureBackup;
     if (identical(store, _store)) return;
@@ -46,6 +69,7 @@ class GestureBackup extends ChangeNotifier {
     _inAccount = {};
     _synced = false;
     _restored = 0;
+    _checkedAt = null;
     _state = store == null ? BackupState.off : BackupState.checking;
     notifyListeners();
     if (store != null) _sync(store);
@@ -65,6 +89,7 @@ class GestureBackup extends ChangeNotifier {
       _restored = missing.length;
       _mirror(); // uploads what only the phone has
       if (_state == BackupState.checking) _state = BackupState.done;
+      _checkedAt = DateTime.now();
       notifyListeners();
     } catch (e) {
       _fail(e);

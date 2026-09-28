@@ -112,10 +112,11 @@ class _Dot extends StatelessWidget {
 
 /// Connect / Disconnect / spinner for the glove, as used on the glove card.
 class GloveActionButton extends StatelessWidget {
-  const GloveActionButton({super.key, required this.link, required this.ble});
+  const GloveActionButton({super.key, required this.link, required this.ble, this.onLight = false});
 
   final GloveLink link;
   final GloveBle ble;
+  final bool onLight; // on a white card (Profile) instead of the dark glove card
 
   @override
   Widget build(BuildContext context) {
@@ -129,11 +130,11 @@ class GloveActionButton extends StatelessWidget {
           label: 'Disconnect',
           onTap: ble.disconnect,
           decoration: BoxDecoration(
-            color: AppColors.glass,
+            color: onLight ? AppColors.surface2 : AppColors.glass,
             borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(color: AppColors.glassBorder),
+            border: Border.all(color: onLight ? AppColors.line : AppColors.glassBorder),
           ),
-          textColor: AppColors.onDark,
+          textColor: onLight ? AppColors.ink : AppColors.onDark,
         ),
       GloveLink.disconnected => _Pill(
           label: 'Connect',

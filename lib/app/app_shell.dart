@@ -60,7 +60,7 @@ class _AppShellState extends State<AppShell> {
                 services: services,
                 onOpenTab: _go,
                 onOpenProfile: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => ProfileScreen(account: services.account)),
+                  MaterialPageRoute<void>(builder: (_) => ProfileScreen(services: services)),
                 ),
               ),
               ConversationScreen(services: services),

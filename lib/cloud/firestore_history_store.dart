@@ -29,4 +29,16 @@ class FirestoreHistoryStore implements HistoryStore {
 
   @override
   Future<void> delete(String id) => _conversations.doc(id).delete();
+
+  @override
+  Future<void> deleteAll() async {
+    final docs = (await _conversations.get()).docs;
+    for (var i = 0; i < docs.length; i += 400) {
+      final batch = FirebaseFirestore.instance.batch(); // a batch holds at most 500 writes
+      for (final doc in docs.skip(i).take(400)) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+    }
+  }
 }

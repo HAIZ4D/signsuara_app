@@ -12,6 +12,9 @@ abstract class HistoryStore {
   Future<void> save(SavedConversation conversation);
 
   Future<void> delete(String id);
+
+  /// Every conversation, not only the newest ones.
+  Future<void> deleteAll();
 }
 
 /// Kept in memory only: a guest's conversations stay until the app closes.
@@ -39,6 +42,12 @@ class MemoryHistoryStore implements HistoryStore {
   @override
   Future<void> delete(String id) async {
     _all.remove(id);
+    _changed.add(null);
+  }
+
+  @override
+  Future<void> deleteAll() async {
+    _all.clear();
     _changed.add(null);
   }
 }

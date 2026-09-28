@@ -16,6 +16,8 @@ Universiti Putra Malaysia (UPM).
   **conversation history** (read back or delete past conversations) and **backs up your custom
   gestures** (they come back after a reinstall or on a new phone). Guests can use everything on
   the phone; their conversations are kept until the app closes.
+- **Profile & settings**: glove connection, speech language, voice test, conversation history
+  (count, clear all), gesture backup (check now), Google account, about and licences.
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -132,7 +134,7 @@ other recordings.
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
-| `lib/screens/` | redesigned screens (Home, Conversation, Hearing, Learn, …) |
+| `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Conversation, Hearing, Learn, history, Profile & settings |
 | `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
@@ -140,7 +142,7 @@ other recordings.
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 111 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 116 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -231,4 +233,4 @@ never hardcodes the labels, the number of classes or the window size.
 | `shared_preferences` | saved data | BSD-3-Clause |
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
 | `google_sign_in` | Google account picker | BSD-3-Clause |
-| Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline | SIL Open Font License 1.1 |
+| Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

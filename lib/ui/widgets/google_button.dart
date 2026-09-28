@@ -35,8 +35,12 @@ class GoogleButton extends StatelessWidget {
                       )
                     : const SizedBox.square(dimension: 20, child: CustomPaint(painter: _GoogleG())),
                 const SizedBox(width: 12),
-                Text(busy ? 'Signing in…' : 'Continue with Google',
-                    style: AppText.strong.copyWith(color: AppColors.googleText, fontSize: 16)),
+                Flexible(
+                  // wraps instead of overflowing with large accessibility text
+                  child: Text(busy ? 'Signing in…' : 'Continue with Google',
+                      textAlign: TextAlign.center,
+                      style: AppText.strong.copyWith(color: AppColors.googleText, fontSize: 16)),
+                ),
               ],
             ),
           ),

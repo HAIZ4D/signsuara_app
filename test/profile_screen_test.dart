@@ -1,0 +1,115 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signsuara_app/app/app_services.dart';
+import 'package:signsuara_app/app/font_licences.dart';
+import 'package:signsuara_app/cloud/account.dart';
+import 'package:signsuara_app/screens/profile_screen.dart';
+import 'package:signsuara_app/speech/sign_words.dart';
+import 'package:signsuara_app/theme/app_theme.dart';
+
+import 'fake_auth_backend.dart';
+
+Future<AppServices> _pumpProfile(WidgetTester tester, {Account? account}) async {
+  tester.view.physicalSize = const Size(1080, 2400); // a phone: 360 x 800
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
+  final services = AppServices(account: account ?? Account(FakeAuthBackend()));
+  addTearDown(services.dispose);
+  await tester.pumpWidget(MaterialApp(theme: buildAppTheme(), home: ProfileScreen(services: services)));
+  return services;
+}
+
+Future<void> _settle(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 400));
+}
+
+Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(finder, 150, scrollable: find.byType(Scrollable).first);
+  await tester.ensureVisible(finder); // fully on screen, so a tap lands on it
+  await tester.pump();
+}
+
+void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        const MethodChannel('flutter_tts'), (call) async => call.method == 'isLanguageAvailable' ? true : 1);
+  });
+
+  testWidgets('guest: real numbers and settings; language switch; sign in from here', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final services = await _pumpProfile(tester);
+    expect(find.text('Guest · not signed in'), findsOneWidget);
+    expect(find.bySemanticsLabel('0 Conversations'), findsOneWidget);
+    expect(find.bySemanticsLabel('5 Built-in signs'), findsOneWidget, reason: 'A, B, Saya, Nama, Terima kasih');
+    expect(find.text('Not connected'), findsOneWidget, reason: 'glove');
+    expect(find.text('Connect'), findsOneWidget);
+
+    await tester.tap(find.text('EN'));
+    await _settle(tester);
+    expect(services.speaker.language, SpeechLanguage.english);
+    expect(find.textContaining('Spoken in English'), findsOneWidget);
+
+    await _scrollTo(tester, find.text('Continue with Google'));
+    await tester.tap(find.text('Continue with Google'));
+    await _settle(tester);
+    expect(services.account.name, 'Test User');
+    await _scrollTo(tester, find.text('Sign out'));
+    expect(find.text('Google account'), findsOneWidget);
+    expect(find.text('test.user@example.com'), findsWidgets);
+    semantics.dispose();
+  });
+
+  testWidgets('conversation history: count, and Clear all asks first', (tester) async {
+    final services = await _pumpProfile(tester);
+    services.log.addHeard('Sila tunggu');
+    await _settle(tester);
+    await _scrollTo(tester, find.text('Clear all'));
+    expect(find.text('1 kept until the app closes (guest)'), findsOneWidget);
+
+    await tester.tap(find.text('Clear all'));
+    await _settle(tester);
+    expect(find.text('Delete all conversations?'), findsOneWidget);
+    await tester.tap(find.text('Delete all'));
+    await _settle(tester);
+    expect(find.text('0 kept until the app closes (guest)'), findsOneWidget);
+    expect(find.text('Clear all'), findsNothing);
+  });
+
+  testWidgets('signed in: history and backup are in the account; sign out', (tester) async {
+    final services = await _pumpProfile(tester, account: Account(FakeAuthBackend(currentUser: testUser)));
+    services.backup.start();
+    services.log.addSigned('Saya');
+    await _settle(tester);
+    expect(find.text('1 saved to your Google account'), findsOneWidget);
+    expect(find.textContaining('Backed up to your Google account.'), findsOneWidget);
+    expect(find.byTooltip('Check the backup now'), findsOneWidget);
+
+    await _scrollTo(tester, find.text('Sign out'));
+    await tester.tap(find.text('Sign out'));
+    await _settle(tester);
+    expect(services.account.signedIn, isFalse);
+    expect(find.text('Continue with Google'), findsOneWidget, reason: 'can sign in again');
+  });
+
+  testWidgets('About opens with the project name', (tester) async {
+    await _pumpProfile(tester);
+    await _scrollTo(tester, find.text('About SignSuara'));
+    await tester.tap(find.text('About SignSuara'));
+    await _settle(tester);
+    expect(find.textContaining('Universiti Putra Malaysia'), findsWidgets);
+    expect(find.text('View licenses'), findsOneWidget);
+  });
+
+  test('the bundled fonts bring their licence text into the app', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    final entries = await fontLicences().toList();
+    expect([for (final e in entries) ...e.packages], ['Sora font', 'Plus Jakarta Sans font']);
+    for (final e in entries) {
+      expect(e.paragraphs.map((p) => p.text).join(' '), contains('SIL OPEN FONT LICENSE'));
+    }
+  });
+}

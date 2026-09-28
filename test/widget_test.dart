@@ -8,6 +8,7 @@ import 'package:signsuara_app/custom/custom_gestures_page.dart';
 import 'package:signsuara_app/custom/record_gesture_page.dart';
 import 'package:signsuara_app/glove/glove_session.dart';
 import 'package:signsuara_app/main.dart';
+import 'package:signsuara_app/screens/profile_screen.dart';
 import 'package:signsuara_app/screens/splash_screen.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
@@ -81,17 +82,20 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('Profile: the account, and signing out makes Home say Guest', (tester) async {
+  testWidgets('signing out in Profile makes Home say Guest', (tester) async {
     final semantics = tester.ensureSemantics();
     await openApp(tester, Account(FakeAuthBackend(currentUser: testUser)));
     expect(find.textContaining('Test User', findRichText: true), findsOneWidget);
 
     await tester.tap(find.bySemanticsLabel('Profile').first);
     await tester.pumpAndSettle();
-    expect(find.text('test.user@example.com'), findsOneWidget);
-    await tester.tap(find.text('Sign out'));
+    expect(find.text('test.user@example.com'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('Sign out'), 150,
+        scrollable: find.descendant(of: find.byType(ProfileScreen), matching: find.byType(Scrollable)).first);
+    await tester.ensureVisible(find.text('Sign out'));
     await tester.pump();
-    expect(find.text('Continue with Google'), findsOneWidget, reason: 'can sign in again from here');
+    await tester.tap(find.text('Sign out'));
+    await tester.pump(); // Profile details: profile_screen_test.dart
 
     await tester.pageBack();
     await tester.pump();

@@ -66,6 +66,11 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # The font licences travel with the fonts (the OFL asks for it); shown in Profile > About.
+  assets:
+    - assets/fonts/OFL-Sora.txt
+    - assets/fonts/OFL-PlusJakartaSans.txt
+
   # Bundled so the app works offline (SIL Open Font License, see assets/fonts/OFL-*.txt).
   fonts:
     - family: Sora

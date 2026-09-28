@@ -95,6 +95,12 @@ class ConversationHistory extends ChangeNotifier {
     await _store?.delete(id);
   }
 
+  /// Deletes every saved conversation (in the account when signed in).
+  Future<void> deleteAll() async {
+    _id = null;
+    await _store?.deleteAll();
+  }
+
   @override
   void dispose() {
     log.removeListener(_onLog);
