@@ -1,0 +1,60 @@
+import 'package:flutter/material.dart';
+
+import '../../theme/app_theme.dart';
+import 'motion.dart';
+
+/// Dark-blue header panel with drifting colour blobs and round bottom corners (design: .hx-hero).
+class HeroPanel extends StatelessWidget {
+  const HeroPanel({super.key, required this.child, this.bottomPadding = 64});
+
+  final Widget child;
+  final double bottomPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppRadius.hero)),
+      child: DecoratedBox(
+        decoration: const BoxDecoration(gradient: AppGradients.deep),
+        child: Stack(
+          children: [
+            const Positioned.fill(child: Aurora()),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpace.xl,
+                MediaQuery.paddingOf(context).top + AppSpace.s,
+                AppSpace.xl,
+                bottomPadding,
+              ),
+              child: child,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// "Section title ........ action" row above a list (design: .hx-sec).
+class SectionHeader extends StatelessWidget {
+  const SectionHeader({super.key, required this.title, this.action, this.onAction});
+
+  final String title;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(22, 22, 12, 6),
+        child: Row(
+          children: [
+            Expanded(child: Text(title, style: AppText.section)),
+            if (action != null)
+              TextButton(
+                onPressed: onAction,
+                child: Text(action!, style: AppText.label.copyWith(color: AppColors.turq, fontWeight: FontWeight.w800)),
+              ),
+          ],
+        ),
+      );
+}

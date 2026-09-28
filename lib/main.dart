@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'home_page.dart';
+import 'app/app_shell.dart';
+import 'theme/app_theme.dart';
 
 void main() => runApp(const SignSuaraApp());
 
@@ -11,7 +12,7 @@ class SignSuaraApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
         title: 'SignSuara',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
-        home: const HomePage(),
+        theme: buildAppTheme(),
+        home: const AppShell(),
       );
 }

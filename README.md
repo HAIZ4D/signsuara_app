@@ -127,7 +127,11 @@ other recordings.
 | `lib/glove/` | `glove_ble.dart` (Bluetooth), `glove_session.dart` (packets → classifier) |
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens |
-| `lib/home_page.dart` | main screen |
+| `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
+| `lib/screens/` | redesigned screens (Home, Learn, …) |
+| `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
+| `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
+| `lib/home_page.dart` | the previous single screen, still used by tabs not yet redesigned |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python) |
@@ -171,3 +175,4 @@ never hardcodes the labels, the number of classes or the window size.
 | `speech_to_text` | speech recognition | BSD-3-Clause |
 | `wakelock_plus` | keep the screen on | BSD-3-Clause |
 | `shared_preferences` | saved data | BSD-3-Clause |
+| Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline | SIL Open Font License 1.1 |

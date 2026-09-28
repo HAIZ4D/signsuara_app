@@ -11,17 +11,45 @@ import 'package:signsuara_app/main.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  testWidgets('home page starts disconnected, Malay selected, nothing signed or heard yet',
+  testWidgets('app opens on Home: greeting, glove card (not connected), start card, empty history',
       (tester) async {
     await tester.pumpWidget(const SignSuaraApp());
-    expect(find.text('Not connected'), findsOneWidget);
+    expect(find.textContaining('Assalamualaikum', findRichText: true), findsOneWidget);
+    expect(find.textContaining('Guest', findRichText: true), findsOneWidget);
+    expect(find.text('SignSuara Glove'), findsOneWidget);
+    expect(find.text('NOT CONNECTED'), findsOneWidget);
     expect(find.text('Connect'), findsOneWidget);
-    expect(find.text('BM'), findsOneWidget);
-    expect(find.text('EN'), findsOneWidget);
-    expect(find.text('Sign something…'), findsOneWidget);
+    expect(find.text('Sign it, and be heard'), findsOneWidget);
+
+    // Further down the page: scroll like on the phone.
+    await tester.scrollUntilVisible(find.text('No conversations yet'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('SubhanAllah'), findsOneWidget);
+    expect(find.text('No conversations yet'), findsOneWidget);
+  });
+
+  testWidgets('the capsule tabs switch screens', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(const SignSuaraApp());
+    Future<void> openTab(String label) async {
+      await tester.tap(find.bySemanticsLabel(label));
+      await tester.pump(const Duration(milliseconds: 700));
+    }
+
+    await openTab('Learn');
+    expect(find.text('Learn and sign the Arabic letters'), findsOneWidget);
+    expect(find.text('Coming soon'), findsOneWidget);
+
+    await openTab('Conversation'); // still the old screen until it is redesigned
     expect(find.text('They said'), findsOneWidget);
     expect(find.text('Tap to talk'), findsOneWidget);
-    expect(find.byTooltip('My gestures'), findsOneWidget);
+
+    await openTab('Gestures');
+    expect(find.textContaining('No custom gestures yet'), findsOneWidget);
+
+    await openTab('Home');
+    expect(find.text('Sign it, and be heard'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('My gestures: empty message, then the list with a delete button', (tester) async {

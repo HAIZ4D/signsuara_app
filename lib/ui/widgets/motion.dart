@@ -1,0 +1,237 @@
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+
+import '../../theme/app_theme.dart';
+
+/// Soft drifting colour blobs behind the dark hero panels (design: .hx-aurora).
+class Aurora extends StatefulWidget {
+  const Aurora({super.key});
+
+  @override
+  State<Aurora> createState() => _AuroraState();
+}
+
+class _AuroraState extends State<Aurora> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 12));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  Widget _blob(double size, Color color, double opacity) => Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: RadialGradient(colors: [color.withValues(alpha: opacity), color.withValues(alpha: 0)]),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final t = Curves.easeInOut.transform(_c.value);
+          final drift = Offset(-30 * t, 24 * t);
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned(top: -90, right: -60, child: Transform.translate(offset: drift, child: _blob(260, AppColors.turq, 0.55))),
+              Positioned(bottom: -70, left: -40, child: Transform.translate(offset: -drift, child: _blob(190, AppColors.yellow, 0.3))),
+              Positioned(
+                top: 60,
+                left: 150,
+                child: Transform.scale(scale: 1 + 0.15 * t, child: _blob(150, AppColors.royal, 0.4)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A band of light that sweeps across a card every few seconds (design: hxShine).
+class ShineSweep extends StatefulWidget {
+  const ShineSweep({super.key, this.strength = 0.28});
+
+  final double strength;
+
+  @override
+  State<ShineSweep> createState() => _ShineSweepState();
+}
+
+class _ShineSweepState extends State<ShineSweep> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 4500));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          // Idle for the first 60 % of the cycle, then sweep left → right.
+          final u = ((_c.value - 0.6) / 0.4).clamp(0.0, 1.0);
+          return FractionalTranslation(
+            translation: Offset(-1 + 2 * u, 0),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: const Alignment(-1, -0.3),
+                  end: const Alignment(1, 0.3),
+                  colors: [
+                    AppColors.onDark.withValues(alpha: 0),
+                    AppColors.onDark.withValues(alpha: widget.strength),
+                    AppColors.onDark.withValues(alpha: 0),
+                  ],
+                  stops: const [0.3, 0.48, 0.62],
+                ),
+              ),
+              child: const SizedBox.expand(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Fades and slides a child up when it first appears; [delay] staggers lists (design: .stagger).
+class FadeUp extends StatefulWidget {
+  const FadeUp({super.key, required this.child, this.delay = Duration.zero});
+
+  final Widget child;
+  final Duration delay;
+
+  @override
+  State<FadeUp> createState() => _FadeUpState();
+}
+
+class _FadeUpState extends State<FadeUp> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: AppMotion.slow + widget.delay);
+  late final _a = CurvedAnimation(
+    parent: _c,
+    curve: Interval(widget.delay.inMilliseconds / _c.duration!.inMilliseconds, 1, curve: AppMotion.outCurve),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (AppMotion.reduced(context)) {
+      _c.value = 1;
+    } else if (!_c.isAnimating && _c.value == 0) {
+      _c.forward();
+    }
+  }
+
+  @override
+  void dispose() {
+    _a.dispose();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _a,
+        builder: (context, child) => Opacity(
+          opacity: _a.value,
+          child: Transform.translate(offset: Offset(0, 14 * (1 - _a.value)), child: child),
+        ),
+        child: widget.child,
+      );
+}
+
+/// Decorative animated bars (design: Waveform). Not a real audio level.
+class Waveform extends StatefulWidget {
+  const Waveform({super.key, required this.color, this.bars = 26, this.height = 64, this.active = true});
+
+  final Color color;
+  final int bars;
+  final double height;
+  final bool active;
+
+  @override
+  State<Waveform> createState() => _WaveformState();
+}
+
+class _WaveformState extends State<Waveform> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 20));
+  late final _phases = List.generate(widget.bars, (i) => Random(i * 7 + 3).nextDouble() * 2 * pi);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: widget.height,
+        width: double.infinity,
+        child: AnimatedBuilder(
+          animation: _c,
+          builder: (context, _) => CustomPaint(
+            painter: _WavePainter(_c.value * 1200, _phases, widget.color, widget.active),
+          ),
+        ),
+      );
+}
+
+class _WavePainter extends CustomPainter {
+  _WavePainter(this.t, this.phases, this.color, this.active);
+
+  final double t;
+  final List<double> phases;
+  final Color color;
+  final bool active;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bw = size.width / phases.length;
+    for (var i = 0; i < phases.length; i++) {
+      final energy = active ? 0.35 + 0.65 * (sin(t * 0.06 + phases[i]) * sin(t * 0.013 + i)).abs() : 0.12;
+      final h = energy * size.height;
+      final paint = Paint()..color = color.withValues(alpha: color.a * (active ? 0.55 + energy * 0.45 : 0.3));
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(i * bw + bw * 0.22, (size.height - h) / 2, bw * 0.56, h),
+          Radius.circular(bw * 0.28),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WavePainter old) => old.t != t || old.active != active || old.color != color;
+}

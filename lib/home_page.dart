@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:wakelock_plus/wakelock_plus.dart';
 
-import 'app_storage.dart';
+import 'app/app_services.dart';
 import 'custom/custom_gestures.dart';
 import 'custom/custom_gestures_page.dart';
 import 'glove/glove_ble.dart';
@@ -10,87 +9,26 @@ import 'speech/sign_words.dart';
 import 'speech/speaker.dart';
 import 'speech/transcriber.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+/// The old single-screen UI. TEMPORARY: shown in the Conversation and Hearing tabs until the
+/// redesigned screens replace it (redesign steps 2 and 3). Uses the shared [AppServices].
+class HomePage extends StatelessWidget {
+  const HomePage({super.key, required this.services});
 
-  @override
-  State<HomePage> createState() => _HomePageState();
-}
+  final AppServices services;
 
-class _HomePageState extends State<HomePage> {
-  final speaker = Speaker();
-  final transcriber = Transcriber();
-  final gestures = CustomGestures();
-  late final session = GloveSession(onGesture: speaker.say);
-  late final ble = GloveBle(session);
-  AppStorage? _storage;
-  var _screenOn = false;
-
-  @override
-  void initState() {
-    super.initState();
-    session.customMatch = (features) => gestures.matcher.match(features);
-    speaker.lookup = _words;
-    session.addListener(_keepScreenOnWhileConnected);
-    transcriber.addListener(_muteSpeakerWhileListening);
-    _start();
-  }
-
-  Future<void> _start() async {
-    try {
-      final storage = _storage = await AppStorage.open();
-      speaker.language = storage.loadLanguage() ?? SpeechLanguage.malay;
-      gestures.load(storage);
-    } catch (_) {
-      // Without storage the app still works; custom gestures just can't be saved.
-    }
-    await speaker.init();
-  }
-
-  /// Words for any label: a custom gesture's phrase, or the built-in speech map.
-  SignWords _words(String label) => gestures.customWords(label) ?? wordsFor(label);
-
-  void _setLanguage(SpeechLanguage language) {
-    speaker.setLanguage(language);
-    _storage?.saveLanguage(language);
-  }
-
-  void _muteSpeakerWhileListening() => speaker.muted = transcriber.listening;
-
-  /// Mic button: start listening (silencing the phone first), or stop early.
-  Future<void> _talk() async {
-    if (transcriber.listening) return transcriber.stop();
-    speaker.muted = true;
-    await speaker.stop();
-    await transcriber.listen(speaker.language);
-  }
-
-  /// The screen stays on during a conversation (glove connected), normal otherwise.
-  void _keepScreenOnWhileConnected() {
-    final connected = session.link == GloveLink.connected;
-    if (connected == _screenOn) return;
-    _screenOn = connected;
-    WakelockPlus.toggle(enable: connected);
-  }
-
-  @override
-  void dispose() {
-    if (_screenOn) WakelockPlus.disable();
-    session.removeListener(_keepScreenOnWhileConnected);
-    transcriber.removeListener(_muteSpeakerWhileListening);
-    if (transcriber.listening) transcriber.stop();
-    ble.disconnect();
-    session.dispose();
-    speaker.dispose();
-    transcriber.dispose();
-    gestures.dispose();
-    super.dispose();
-  }
+  Speaker get speaker => services.speaker;
+  Transcriber get transcriber => services.transcriber;
+  CustomGestures get gestures => services.gestures;
+  GloveSession get session => services.session;
+  GloveBle get ble => services.ble;
+  SignWords _words(String label) => services.words(label);
+  void _setLanguage(SpeechLanguage language) => services.setLanguage(language);
+  Future<void> _talk() => services.talk();
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: Listenable.merge([session, speaker, transcriber, gestures]),
+      listenable: services.changes,
       builder: (context, _) {
         final text = Theme.of(context).textTheme;
         final colors = Theme.of(context).colorScheme;
