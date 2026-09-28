@@ -5,8 +5,8 @@ enum Side { me, them }
 /// One line of the conversation: something I signed ([label] = model/custom label) or
 /// something the hearing person said ([text]).
 class ChatMessage {
-  ChatMessage.signed(String this.label) : side = Side.me, text = '', at = DateTime.now();
-  ChatMessage.heard(this.text) : side = Side.them, label = null, at = DateTime.now();
+  ChatMessage.signed(String this.label, this.at) : side = Side.me, text = '';
+  ChatMessage.heard(this.text, this.at) : side = Side.them, label = null;
 
   final Side side;
   final String? label;
@@ -17,6 +17,10 @@ class ChatMessage {
 /// The conversation shown as chat bubbles. UI-level only: fed from outside by the signed-label
 /// callback and by the transcriber's state, so recognition and speech code stay unchanged.
 class ConversationLog extends ChangeNotifier {
+  /// [clock] gives each message its time (tests pass a fake one).
+  ConversationLog({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+
+  final DateTime Function() _clock;
   final List<ChatMessage> _messages = [];
   ChatMessage? _openHeard; // Android can deliver the final words just AFTER listening stops
   String? _logged; // transcriber text already logged for the current listen
@@ -25,14 +29,14 @@ class ConversationLog extends ChangeNotifier {
   List<ChatMessage> get messages => List.unmodifiable(_messages);
 
   void addSigned(String label) {
-    _messages.add(ChatMessage.signed(label));
+    _messages.add(ChatMessage.signed(label, _clock()));
     notifyListeners();
   }
 
   /// Something the hearing person said without the mic (e.g. a quick-reply button).
   void addHeard(String text) {
     _openHeard = null;
-    _messages.add(ChatMessage.heard(text));
+    _messages.add(ChatMessage.heard(text, _clock()));
     notifyListeners();
   }
 
@@ -50,7 +54,7 @@ class ConversationLog extends ChangeNotifier {
     if (open != null) {
       open.text = words;
     } else if (_logged == null) {
-      _messages.add(_openHeard = ChatMessage.heard(words));
+      _messages.add(_openHeard = ChatMessage.heard(words, _clock()));
     } else {
       return; // this listen's message was closed (quick reply / clear): never re-add old text
     }

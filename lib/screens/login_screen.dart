@@ -47,7 +47,7 @@ class LoginScreen extends StatelessWidget {
                                   textAlign: TextAlign.center, style: AppText.heroTitle.copyWith(fontSize: 28)),
                               const SizedBox(height: 12),
                               Text(
-                                'Sign in with Google so the app greets you by name. '
+                                'Sign in with Google so the app greets you by name and keeps your conversations. '
                                 'Or continue as a guest: signing, speech and your custom signs work the same.',
                                 textAlign: TextAlign.center,
                                 style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 16, height: 1.55),
@@ -58,7 +58,7 @@ class LoginScreen extends StatelessWidget {
                                   icon: Icons.cloud_upload_outlined,
                                   text: 'Backup of your custom signs',
                                   soon: true),
-                              const _Perk(icon: Icons.history_rounded, text: 'Conversation history', soon: true),
+                              const _Perk(icon: Icons.history_rounded, text: 'Your conversation history, kept'),
                             ],
                           ),
                         ),
@@ -89,7 +89,7 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Only your name, email and photo are saved to your account.',
+                                'Saved to your account: your name, email, photo and conversations.',
                                 textAlign: TextAlign.center,
                                 style: AppText.small.copyWith(color: AppColors.onDarkFaint),
                               ),

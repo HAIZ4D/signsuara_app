@@ -3,10 +3,13 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../theme/app_theme.dart';
+import '../ui/time_label.dart';
+import '../ui/widgets/conversation_tile.dart';
 import '../ui/widgets/glove_card.dart';
 import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
 import '../ui/widgets/user_avatar.dart';
+import 'history_screen.dart';
 
 /// Home dashboard (design: home.jsx). Only real data: no battery, no invented stats.
 class HomeScreen extends StatelessWidget {
@@ -110,10 +113,15 @@ class HomeScreen extends StatelessWidget {
               padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 14, AppSpace.gutter, 0),
               child: _SignOfTheDay(onTap: () => onOpenTab(learnTab)),
             ),
-            SectionHeader(title: 'Recent conversations', action: 'Open', onAction: () => onOpenTab(conversationTab)),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpace.gutter),
-              child: _EmptyRecent(),
+            SectionHeader(
+              title: 'Recent conversations',
+              action: services.history.recent.isEmpty ? null : 'See all',
+              onAction: () => Navigator.of(context)
+                  .push(MaterialPageRoute<void>(builder: (_) => HistoryScreen(services: services))),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
+              child: _Recent(services: services),
             ),
           ],
         ),
@@ -129,16 +137,9 @@ class _Greeting extends StatelessWidget {
   final String? photoUrl;
   final VoidCallback onAvatar;
 
-  static const _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  static const _months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
-
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final date = '${_days[now.weekday - 1]}, ${now.day} ${_months[now.month - 1]}';
+    final date = longDate(DateTime.now());
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -434,8 +435,38 @@ class _DotGrid extends CustomPainter {
 }
 
 /// Shown until conversation history exists (redesign step 7).
+/// The newest 3 saved conversations, or a card saying there are none yet.
+class _Recent extends StatelessWidget {
+  const _Recent({required this.services});
+
+  final AppServices services;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = services.history.recent.take(3).toList();
+    if (recent.isEmpty) return _EmptyRecent(kept: services.history.kept);
+    return Column(
+      children: [
+        for (final c in recent)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: ConversationTile(
+              conversation: c,
+              language: services.speaker.language,
+              onTap: () => openConversation(context, services, c),
+            ),
+          ),
+        if (!services.history.kept)
+          Text(keptNote(services), textAlign: TextAlign.center, style: AppText.small.copyWith(color: AppColors.inkFaint)),
+      ],
+    );
+  }
+}
+
 class _EmptyRecent extends StatelessWidget {
-  const _EmptyRecent();
+  const _EmptyRecent({required this.kept});
+
+  final bool kept;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -460,7 +491,10 @@ class _EmptyRecent extends StatelessWidget {
                 children: [
                   Text('No conversations yet', style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14.5)),
                   const SizedBox(height: 2),
-                  Text('Connect your glove and start signing. Your conversations will show up here.',
+                  Text(
+                      kept
+                          ? 'Connect your glove and start signing. Your conversations are saved to your account.'
+                          : 'Connect your glove and start signing. Sign in to keep your conversations.',
                       style: AppText.small.copyWith(color: AppColors.inkFaint, fontSize: 12.5)),
                 ],
               ),

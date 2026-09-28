@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../history/history_store.dart';
+
 /// A signed-in Google user: only what the app shows and saves (no tokens).
 class AppUser {
   const AppUser({required this.uid, required this.name, required this.email, this.photoUrl});
@@ -25,6 +27,9 @@ abstract class AuthBackend {
   Future<AppUser?> signInWithGoogle();
 
   Future<void> signOut();
+
+  /// Where this user's conversations are kept.
+  HistoryStore historyFor(AppUser user);
 }
 
 /// Who is using the app: a Google account, or a guest (no account, no cloud features).
@@ -35,12 +40,25 @@ class Account extends ChangeNotifier {
 
   final AuthBackend? _backend;
   AppUser? _user;
+  HistoryStore? _history;
+  String? _historyUid;
   var _busy = false;
   String? _error;
 
   AppUser? get user => _user;
   bool get signedIn => _user != null;
   bool get busy => _busy;
+
+  /// The signed-in user's saved conversations; null for a guest.
+  HistoryStore? get history {
+    final user = _user;
+    if (user == null) return null;
+    if (user.uid != _historyUid) {
+      _history = _backend!.historyFor(user);
+      _historyUid = user.uid;
+    }
+    return _history;
+  }
 
   /// The last sign-in problem, or null.
   String? get error => _error;

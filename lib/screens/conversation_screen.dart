@@ -3,11 +3,11 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../glove/glove_session.dart';
-import '../history/conversation_log.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/finger_bend.dart';
 import '../ui/widgets/brand.dart';
+import '../ui/widgets/chat_bubble.dart';
 import '../ui/widgets/finger_bars.dart';
 import '../ui/widgets/glass_chip.dart';
 import '../ui/widgets/glove_card.dart';
@@ -205,16 +205,18 @@ class _Chat extends StatelessWidget {
     ];
     // Newest at the bottom: build in reading order, show in a reversed list (sticks to the bottom).
     final items = <Widget>[
-      const Center(child: _DayChip('Today')),
+      const Center(child: DayChip('Today')),
       if (messages.isEmpty && !listening) const _EmptyChat(),
       for (final m in messages)
-        _Bubble(
-          key: ObjectKey(m),
-          message: m,
-          words: m.label == null ? null : services.words(m.label!),
-          language: language,
-          onRepeat: m.label == null ? null : () => services.speaker.say(m.label!),
-        ),
+        if (m.label case final label?)
+          ChatBubble.signed(
+            key: ObjectKey(m),
+            words: services.words(label),
+            language: language,
+            onRepeat: () => services.speaker.say(label),
+          )
+        else
+          ChatBubble.heard(key: ObjectKey(m), text: m.text),
       if (listening) _DraftBubble(text: services.transcriber.text),
     ];
     return Column(
@@ -231,20 +233,6 @@ class _Chat extends StatelessWidget {
       ],
     );
   }
-}
-
-class _DayChip extends StatelessWidget {
-  const _DayChip(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        margin: const EdgeInsets.only(top: 6, bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(AppRadius.pill)),
-        child: Text(text, style: AppText.eyebrow.copyWith(color: AppColors.inkFaint, letterSpacing: 0.3)),
-      );
 }
 
 class _EmptyChat extends StatelessWidget {
@@ -266,77 +254,6 @@ class _EmptyChat extends StatelessWidget {
           ],
         ),
       );
-}
-
-class _Bubble extends StatelessWidget {
-  const _Bubble({super.key, required this.message, required this.words, required this.language, this.onRepeat});
-
-  final ChatMessage message;
-  final SignWords? words; // for my signed messages
-  final SpeechLanguage language;
-  final VoidCallback? onRepeat;
-
-  @override
-  Widget build(BuildContext context) {
-    final me = message.side == Side.me;
-    final other = language == SpeechLanguage.malay ? SpeechLanguage.english : SpeechLanguage.malay;
-    final main = me ? words!.shown(language) : message.text;
-    final sub = me && words!.shown(other) != main ? words!.shown(other) : null;
-    final ink = me ? AppColors.onDark : AppColors.ink;
-
-    final bubble = Container(
-      constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
-      padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
-      decoration: BoxDecoration(
-        gradient: me ? AppGradients.bubbleMe : null,
-        color: me ? null : AppColors.surface,
-        boxShadow: me ? AppShadows.bubbleMe : AppShadows.card,
-        borderRadius: BorderRadius.only(
-          topLeft: const Radius.circular(22),
-          topRight: const Radius.circular(22),
-          bottomLeft: Radius.circular(me ? 22 : 8),
-          bottomRight: Radius.circular(me ? 8 : 22),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(me ? Icons.waving_hand_rounded : Icons.mic_rounded,
-                size: 13, color: me ? AppColors.onDark : AppColors.onYellowInk),
-            const SizedBox(width: 5),
-            Text(me ? 'SIGNED · SPOKEN ALOUD' : 'HEARD',
-                style: AppText.eyebrow.copyWith(
-                    fontSize: 10.5, color: me ? AppColors.onDark.withValues(alpha: 0.85) : AppColors.onYellowInk)),
-          ]),
-          const SizedBox(height: 5),
-          Text(main, style: AppText.strong.copyWith(color: ink, fontWeight: FontWeight.w600, height: 1.4)),
-          if (sub != null) ...[
-            const SizedBox(height: 4),
-            Text(sub,
-                style: AppText.small.copyWith(
-                    color: ink.withValues(alpha: 0.78), fontStyle: FontStyle.italic, fontWeight: FontWeight.w500)),
-          ],
-        ],
-      ),
-    );
-
-    return FadeUp(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Align(
-          alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-          child: Semantics(
-            button: onRepeat != null,
-            label: me ? 'You signed: $main${sub == null ? '' : ', $sub'}' : 'They said: $main',
-            hint: onRepeat == null ? null : 'Double tap to say it again',
-            excludeSemantics: true,
-            child: GestureDetector(onTap: onRepeat, child: bubble),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 /// Their words appearing live while the mic listens.

@@ -6,6 +6,7 @@ import '../cloud/account.dart';
 import '../custom/custom_gestures.dart';
 import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
+import '../history/conversation_history.dart';
 import '../history/conversation_log.dart';
 import '../speech/sign_words.dart';
 import '../speech/speaker.dart';
@@ -15,8 +16,11 @@ import '../speech/transcriber.dart';
 /// saved settings. Created once by the app shell, so every tab uses the SAME glove connection.
 /// The wiring below was moved unchanged from the old single home page.
 class AppServices {
-  /// [account] null = a guest (tests).
-  AppServices({Account? account}) : account = account ?? Account(null) {
+  /// [account] null = a guest (tests). [log] can be given a test clock.
+  AppServices({Account? account, ConversationLog? log})
+      : account = account ?? Account(null),
+        log = log ?? ConversationLog() {
+    history = ConversationHistory(log: this.log, account: this.account, words: words);
     session.customMatch = (features) => gestures.matcher.match(features);
     speaker.lookup = words;
     session.addListener(_keepScreenOnWhileConnected);
@@ -28,14 +32,15 @@ class AppServices {
   final speaker = Speaker();
   final transcriber = Transcriber();
   final gestures = CustomGestures();
-  final log = ConversationLog();
+  final ConversationLog log;
+  late final ConversationHistory history; // created at once: it must see the first message
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
   var _screenOn = false;
 
   /// Everything a screen may need to redraw for.
-  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log, account]);
+  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log, account, history]);
 
   /// A recognised sign: spoken (as before) and added to the conversation.
   void _onGesture(String label) {
@@ -96,6 +101,7 @@ class AppServices {
     speaker.dispose();
     transcriber.dispose();
     gestures.dispose();
+    history.dispose();
     log.dispose();
   }
 }
