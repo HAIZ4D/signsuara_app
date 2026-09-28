@@ -42,12 +42,6 @@ void main() {
     expect((await AppStorage.open()).loadLanguage(), SpeechLanguage.english);
   });
 
-  test('the welcome pages are remembered as seen', () async {
-    expect((await AppStorage.open()).loadOnboardingSeen(), isFalse);
-    await (await AppStorage.open()).saveOnboardingSeen();
-    expect((await AppStorage.open()).loadOnboardingSeen(), isTrue);
-  });
-
   test('damaged saved data does not crash the app', () async {
     SharedPreferences.setMockInitialValues({'custom_gestures': 'not json'});
     expect((await AppStorage.open()).loadGestures(), isEmpty);

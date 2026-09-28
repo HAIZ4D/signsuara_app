@@ -7,7 +7,7 @@ import '../theme/app_theme.dart';
 import '../ui/widgets/gradient_button.dart';
 import '../ui/widgets/motion.dart';
 
-/// Three welcome pages, shown once (design: screens1.jsx OnboardingScreen).
+/// Three welcome pages, shown each time the app opens (design: screens1.jsx OnboardingScreen).
 /// The texts only promise what the app really does.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key, required this.onDone});

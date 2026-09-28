@@ -12,17 +12,17 @@ import 'package:signsuara_app/theme/app_theme.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
 
 void main() {
-  // A returning user: the welcome pages were already seen (first launch: start_flow_test.dart).
-  setUp(() => SharedPreferences.setMockInitialValues({'onboarding_seen': true}));
+  setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  // Open the app like on the phone: splash, then Skip the welcome pages (those: start_flow_test.dart).
   Future<void> openApp(WidgetTester tester) async {
     await tester.pumpWidget(const SignSuaraApp());
-    await tester.pump(); // storage read
-    await tester.pump(SplashScreen.duration);
-    // Wait until the splash has fully faded out (don't guess frame timings).
-    for (var i = 0; i < 30 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
+    for (var i = 0; i < 50 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
+    await tester.tap(find.text('Skip'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
   }
 
   testWidgets('app opens on Home: greeting, glove card (not connected), start card, empty history',

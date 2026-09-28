@@ -134,8 +134,8 @@ other recordings.
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
-| `tools/` | custom-gesture matcher validation (Python) |
-| `test/` | 61 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
+| `test/` | 84 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

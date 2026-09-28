@@ -15,14 +15,17 @@ class LogoMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox.square(
         dimension: size,
-        child: CustomPaint(painter: _LogoPainter(progress)),
+        child: CustomPaint(painter: LogoPainter(progress: progress)),
       );
 }
 
-class _LogoPainter extends CustomPainter {
-  _LogoPainter(this.progress);
+/// Paints the mark on a 64 x 64 grid. Also used by tools/make_app_icon.dart for the launcher icon,
+/// which leaves out the blue [tile] (Android gives the icon its own shape).
+class LogoPainter extends CustomPainter {
+  LogoPainter({this.progress = 1, this.tile = true});
 
   final double progress;
+  final bool tile;
 
   // Timeline (0..1): arc 1 draws 0.15-0.55, arc 2 0.3-0.7, dot 1 pops 0.6-0.8, dot 2 0.7-0.9.
   double _phase(double from, double to) => ((progress - from) / (to - from)).clamp(0.0, 1.0);
@@ -30,10 +33,12 @@ class _LogoPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.scale(size.width / 64);
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(const Rect.fromLTWH(2, 2, 60, 60), const Radius.circular(18)),
-      Paint()..color = AppColors.blue,
-    );
+    if (tile) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(const Rect.fromLTWH(2, 2, 60, 60), const Radius.circular(18)),
+        Paint()..color = AppColors.blue,
+      );
+    }
 
     final upper = Path()
       ..moveTo(44, 22)
@@ -64,5 +69,5 @@ class _LogoPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LogoPainter old) => old.progress != progress;
+  bool shouldRepaint(LogoPainter old) => old.progress != progress || old.tile != tile;
 }

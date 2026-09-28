@@ -1,17 +1,18 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:signsuara_app/app_storage.dart';
 import 'package:signsuara_app/main.dart';
 import 'package:signsuara_app/screens/splash_screen.dart';
+import 'package:signsuara_app/theme/app_theme.dart';
+import 'package:signsuara_app/ui/widgets/brand.dart';
 
 Future<void> _startApp(WidgetTester tester) async {
   await tester.pumpWidget(const SignSuaraApp());
-  await tester.pump(); // storage read
   expect(find.text('SignSuara', findRichText: true), findsOneWidget, reason: 'splash first');
   expect(find.text('Your voice, in every gesture'), findsOneWidget);
-  await tester.pump(SplashScreen.duration);
-  // Wait until the splash has fully faded out (don't guess frame timings).
-  for (var i = 0; i < 30 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
+  // Frame by frame like the phone (one frame moves the splash on by 0.1 s at most),
+  // until the splash has fully faded out.
+  for (var i = 0; i < 50 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
     await tester.pump(const Duration(milliseconds: 100));
   }
 }
@@ -23,8 +24,9 @@ Future<void> _tap(WidgetTester tester, String text) async {
 }
 
 void main() {
-  testWidgets('first launch: splash, 3 welcome pages, then Home; not shown again', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
+  testWidgets('splash, 3 welcome pages, then Home', (tester) async {
     await _startApp(tester);
 
     expect(find.text('Speak with your hands'), findsOneWidget);
@@ -36,21 +38,37 @@ void main() {
     await _tap(tester, 'Get started');
 
     expect(find.text('Sign it, and be heard'), findsOneWidget, reason: 'Home');
-    expect((await AppStorage.open()).loadOnboardingSeen(), isTrue);
   });
 
-  testWidgets('returning user: splash, then straight to Home', (tester) async {
+  testWidgets('the welcome pages come back every time the app opens', (tester) async {
+    // A phone that ran the earlier version still has this old "seen" flag saved: it is ignored now.
     SharedPreferences.setMockInitialValues({'onboarding_seen': true});
     await _startApp(tester);
-    expect(find.text('Speak with your hands'), findsNothing);
-    expect(find.text('Sign it, and be heard'), findsOneWidget);
+    expect(find.text('Speak with your hands'), findsOneWidget);
   });
 
-  testWidgets('Skip goes straight to Home and is remembered', (tester) async {
-    SharedPreferences.setMockInitialValues({});
+  testWidgets('Skip goes straight to Home', (tester) async {
     await _startApp(tester);
     await _tap(tester, 'Skip');
     expect(find.text('Sign it, and be heard'), findsOneWidget);
-    expect((await AppStorage.open()).loadOnboardingSeen(), isTrue);
+  });
+
+  testWidgets('a very slow first frame does not skip the logo animation', (tester) async {
+    await tester.pumpWidget(const SignSuaraApp());
+    await tester.pump(const Duration(seconds: 5)); // like a debug build starting up
+    expect(find.byType(SplashScreen), findsOneWidget, reason: 'the splash is still playing');
+    expect(find.text('Speak with your hands'), findsNothing);
+  });
+
+  testWidgets('the splash fills the whole screen, flag strip at the bottom', (tester) async {
+    await tester.pumpWidget(const SignSuaraApp());
+    await tester.pump(SplashScreen.duration ~/ 2);
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    final background = find.descendant(
+        of: find.byType(SplashScreen),
+        matching: find.byWidgetPredicate(
+            (w) => w is DecoratedBox && (w.decoration as BoxDecoration).gradient == AppGradients.deep));
+    expect(tester.getSize(background), screen);
+    expect(tester.getBottomLeft(find.byType(FlagStrip)).dy, greaterThan(screen.height * 0.85));
   });
 }

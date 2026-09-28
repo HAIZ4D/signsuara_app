@@ -2,4 +2,6 @@
 <resources>
     <!-- Android launch screen colour = AppColors.blue in lib/theme/app_theme.dart (no white flash) -->
     <color name="splash_background">#002B66</color>
+    <!-- Launcher icon background = the blue tile of the SignSuara logo (AppColors.blue) -->
+    <color name="ic_launcher_background">#002B66</color>
 </resources>
