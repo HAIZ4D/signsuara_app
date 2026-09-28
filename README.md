@@ -12,9 +12,10 @@ Universiti Putra Malaysia (UPM).
 - **Speech output** in Malay or English (BM/EN switch, remembered after restart).
 - **Speech-to-text** for the hearing person: tap to talk, the text is shown large.
 - **Custom gestures**: record your own gesture on the phone and give it a Malay/English phrase.
-- **Optional Google sign-in** (Firebase): the app greets you by name and keeps your
-  **conversation history** (read back or delete past conversations). Guests can use everything
-  on the phone; their conversations are kept until the app closes.
+- **Optional Google sign-in** (Firebase): the app greets you by name, keeps your
+  **conversation history** (read back or delete past conversations) and **backs up your custom
+  gestures** (they come back after a reinstall or on a new phone). Guests can use everything on
+  the phone; their conversations are kept until the app closes.
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -129,17 +130,17 @@ other recordings.
 | `lib/ml/` | `signsuara_model.dart` (generated model), `features.dart`, `gesture_classifier.dart` |
 | `lib/glove/` | `glove_ble.dart` (Bluetooth), `glove_session.dart` (packets → classifier) |
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
-| `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens |
+| `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
 | `lib/screens/` | redesigned screens (Home, Conversation, Hearing, Learn, …) |
-| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations) |
+| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 105 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 111 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -191,6 +192,13 @@ Saved per user:
   `{who: "them", text, at}` (heard words). A conversation starts with the first message after
   the app opens, after the chat is cleared, or after 5 minutes without messages.
   Firestore keeps a copy on the phone, so saving works offline and is sent later.
+- `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `savedAt` and `recordings` (the raw
+  recordings as one JSON text, because Firestore can't store lists inside lists).
+  The list on the phone is the one the app uses; the account keeps a copy
+  (`lib/custom/gesture_backup.dart`): at sign-in, gestures only in the account are added to the
+  phone and gestures only on the phone are uploaded; while signed in, every new gesture is
+  uploaded and every deleted one removed. While signed out nothing is copied, so a gesture
+  deleted then comes back at the next sign-in.
 
 Without an account (guest) nothing is sent to Firebase: conversations are kept only until the app
 closes.

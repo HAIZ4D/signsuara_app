@@ -47,17 +47,15 @@ class LoginScreen extends StatelessWidget {
                                   textAlign: TextAlign.center, style: AppText.heroTitle.copyWith(fontSize: 28)),
                               const SizedBox(height: 12),
                               Text(
-                                'Sign in with Google so the app greets you by name and keeps your conversations. '
+                                'Sign in with Google so the app greets you by name, keeps your conversations '
+                                'and backs up your custom signs. '
                                 'Or continue as a guest: signing, speech and your custom signs work the same.',
                                 textAlign: TextAlign.center,
                                 style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 16, height: 1.55),
                               ),
                               const SizedBox(height: 28),
                               const _Perk(icon: Icons.waving_hand_rounded, text: 'Your Google name and photo in the app'),
-                              const _Perk(
-                                  icon: Icons.cloud_upload_outlined,
-                                  text: 'Backup of your custom signs',
-                                  soon: true),
+                              const _Perk(icon: Icons.cloud_upload_outlined, text: 'Backup of your custom signs'),
                               const _Perk(icon: Icons.history_rounded, text: 'Your conversation history, kept'),
                             ],
                           ),
@@ -89,7 +87,7 @@ class LoginScreen extends StatelessWidget {
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'Saved to your account: your name, email, photo and conversations.',
+                                'Saved to your account: your name, email, photo, conversations and custom signs.',
                                 textAlign: TextAlign.center,
                                 style: AppText.small.copyWith(color: AppColors.onDarkFaint),
                               ),
@@ -109,13 +107,12 @@ class LoginScreen extends StatelessWidget {
   }
 }
 
-/// One thing an account gives you; [soon] = not built yet, and says so.
+/// One thing an account gives you.
 class _Perk extends StatelessWidget {
-  const _Perk({required this.icon, required this.text, this.soon = false});
+  const _Perk({required this.icon, required this.text});
 
   final IconData icon;
   final String text;
-  final bool soon;
 
   @override
   Widget build(BuildContext context) {
@@ -127,15 +124,10 @@ class _Perk extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(color: AppColors.glass, borderRadius: BorderRadius.circular(AppRadius.sm)),
-            child: Icon(icon, size: 19, color: soon ? AppColors.onDarkFaint : AppColors.turqBright),
+            child: Icon(icon, size: 19, color: AppColors.turqBright),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Text(text,
-                style: AppText.label.copyWith(color: soon ? AppColors.onDarkSoft : AppColors.onDark, fontSize: 14)),
-          ),
-          if (soon)
-            Text('coming soon', style: AppText.tiny.copyWith(color: AppColors.yellow, fontWeight: FontWeight.w700)),
+          Expanded(child: Text(text, style: AppText.label.copyWith(color: AppColors.onDark, fontSize: 14))),
         ],
       ),
     );

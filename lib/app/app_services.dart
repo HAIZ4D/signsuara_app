@@ -4,6 +4,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import '../app_storage.dart';
 import '../cloud/account.dart';
 import '../custom/custom_gestures.dart';
+import '../custom/gesture_backup.dart';
 import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
 import '../history/conversation_history.dart';
@@ -21,6 +22,7 @@ class AppServices {
       : account = account ?? Account(null),
         log = log ?? ConversationLog() {
     history = ConversationHistory(log: this.log, account: this.account, words: words);
+    backup = GestureBackup(gestures: gestures, account: this.account);
     session.customMatch = (features) => gestures.matcher.match(features);
     speaker.lookup = words;
     session.addListener(_keepScreenOnWhileConnected);
@@ -34,13 +36,15 @@ class AppServices {
   final gestures = CustomGestures();
   final ConversationLog log;
   late final ConversationHistory history; // created at once: it must see the first message
+  late final GestureBackup backup; // starts in start(), after the phone's gestures are loaded
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
   var _screenOn = false;
 
   /// Everything a screen may need to redraw for.
-  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log, account, history]);
+  Listenable get changes =>
+      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup]);
 
   /// A recognised sign: spoken (as before) and added to the conversation.
   void _onGesture(String label) {
@@ -61,6 +65,7 @@ class AppServices {
     } catch (_) {
       // Without storage the app still works; custom gestures just can't be saved.
     }
+    backup.start();
     await speaker.init();
   }
 
@@ -102,6 +107,7 @@ class AppServices {
     transcriber.dispose();
     gestures.dispose();
     history.dispose();
+    backup.dispose();
     log.dispose();
   }
 }

@@ -47,7 +47,7 @@ void main() {
 
     expect(find.text('Make SignSuara yours'), findsOneWidget);
     expect(find.text('Continue with Google'), findsOneWidget);
-    expect(find.text('coming soon'), findsOneWidget, reason: 'gesture backup is not built yet');
+    expect(find.text('coming soon'), findsNothing, reason: 'everything listed is built');
     await _tap(tester, 'Continue as guest');
 
     expect(find.text(_home), findsOneWidget);

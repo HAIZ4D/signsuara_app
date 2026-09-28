@@ -6,12 +6,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
 import 'account.dart';
+import 'firestore_gesture_store.dart';
 import 'firestore_history_store.dart';
 
 /// Google sign-in through Firebase: the ONLY file using firebase_core, firebase_auth and
-/// google_sign_in. Firestore is used here for the profile and in firestore_history_store.dart.
+/// google_sign_in. Firestore is used here for the profile, and in firestore_history_store.dart and
+/// firestore_gesture_store.dart.
 /// Settings come from android/app/google-services.json (see README "Firebase setup").
 class FirebaseAuthBackend implements AuthBackend {
   FirebaseAuthBackend._();
@@ -72,6 +75,9 @@ class FirebaseAuthBackend implements AuthBackend {
 
   @override
   HistoryStore historyFor(AppUser user) => FirestoreHistoryStore(user.uid);
+
+  @override
+  GestureStore gesturesFor(AppUser user) => FirestoreGestureStore(user.uid);
 
   /// Saves users/{uid}: name, email, photo, first and last sign-in. A failed write is only logged
   /// (e.g. Firestore rules not set yet): the app works the same without it.

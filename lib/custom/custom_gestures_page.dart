@@ -11,16 +11,18 @@ import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
 import 'custom_gesture.dart';
 import 'custom_gestures.dart';
+import 'gesture_backup.dart';
 import 'record_gesture_page.dart';
 
 /// "My gestures" tab (design: screens-v2.jsx GesturesScreen): the custom gestures, with delete
 /// and "Record a new gesture". Only real numbers (no invented uses/accuracy).
 class CustomGesturesPage extends StatelessWidget {
-  const CustomGesturesPage({super.key, required this.gestures, required this.session, this.ble});
+  const CustomGesturesPage({super.key, required this.gestures, required this.session, this.ble, this.backup});
 
   final CustomGestures gestures;
   final GloveSession session;
   final GloveBle? ble;
+  final GestureBackup? backup; // null: no backup line (tests)
 
   static const _ctaHeight = 82.0;
 
@@ -31,7 +33,7 @@ class CustomGesturesPage extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ListenableBuilder(
-        listenable: gestures,
+        listenable: Listenable.merge([gestures, backup]),
         builder: (context, _) {
           final all = gestures.all;
           return ListView(
@@ -85,6 +87,11 @@ class CustomGesturesPage extends StatelessWidget {
                   Text('${all.length} saved', style: AppText.label.copyWith(color: AppColors.inkFaint)),
                 ]),
               ),
+              if (backup case final backup?)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 0, AppSpace.gutter, 12),
+                  child: _BackupLine(backup: backup),
+                ),
               if (all.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
@@ -108,7 +115,9 @@ class CustomGesturesPage extends StatelessWidget {
       context: context,
       builder: (dialog) => AlertDialog(
         title: Text('Delete "${g.malay}"?'),
-        content: const Text('Its recordings are deleted too.'),
+        content: Text(backup?.state == BackupState.off || backup == null
+            ? 'Its recordings are deleted too.'
+            : 'Its recordings are deleted too, also from the backup in your account.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialog, false), child: const Text('Cancel')),
           FilledButton(onPressed: () => Navigator.pop(dialog, true), child: const Text('Delete')),
@@ -116,6 +125,39 @@ class CustomGesturesPage extends StatelessWidget {
       ),
     );
     if (delete == true) await gestures.remove(g.id);
+  }
+}
+
+/// Whether the custom gestures are backed up to the Google account, in plain words.
+class _BackupLine extends StatelessWidget {
+  const _BackupLine({required this.backup});
+
+  final GestureBackup backup;
+
+  @override
+  Widget build(BuildContext context) {
+    final restored = backup.restored;
+    final (icon, color, text) = switch (backup.state) {
+      BackupState.off => (Icons.cloud_off_rounded, AppColors.inkFaint,
+          'Not backed up: sign in (Profile) to keep your gestures in your Google account.'),
+      BackupState.checking => (Icons.cloud_sync_rounded, AppColors.inkFaint, 'Checking the backup in your account…'),
+      BackupState.done => (Icons.cloud_done_rounded, AppColors.turq,
+          restored > 0
+              ? 'Backed up to your Google account. $restored brought back from it.'
+              : 'Backed up to your Google account.'),
+      BackupState.failed => (Icons.cloud_off_rounded, AppColors.warning,
+          'Backup did not work (internet?). Your gestures are still on this phone.'),
+    };
+    return Semantics(
+      liveRegion: true,
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: AppSpace.s),
+          Expanded(child: Text(text, style: AppText.small.copyWith(color: color, fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
   }
 }
 

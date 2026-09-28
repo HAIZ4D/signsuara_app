@@ -65,7 +65,8 @@ class _AppShellState extends State<AppShell> {
               ),
               ConversationScreen(services: services),
               HearingScreen(services: services),
-              CustomGesturesPage(gestures: services.gestures, session: services.session, ble: services.ble),
+              CustomGesturesPage(
+                  gestures: services.gestures, session: services.session, ble: services.ble, backup: services.backup),
               const LearnScreen(),
             ],
           ),
