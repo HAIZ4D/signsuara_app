@@ -5,7 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'custom/custom_gesture.dart';
 import 'speech/sign_words.dart';
 
-/// Everything the app saves on the phone: the custom gestures and the BM/EN choice.
+/// Everything the app saves on the phone: the custom gestures, the BM/EN choice and whether the
+/// welcome pages were seen.
 /// The only file that uses shared_preferences. Data is lost only if the app is uninstalled.
 class AppStorage {
   AppStorage._(this._prefs);
@@ -14,6 +15,7 @@ class AppStorage {
 
   static const _gesturesKey = 'custom_gestures';
   static const _languageKey = 'speech_language';
+  static const _onboardingKey = 'onboarding_seen';
 
   final SharedPreferences _prefs;
 
@@ -33,4 +35,9 @@ class AppStorage {
   SpeechLanguage? loadLanguage() => SpeechLanguage.values.asNameMap()[_prefs.getString(_languageKey)];
 
   Future<void> saveLanguage(SpeechLanguage language) => _prefs.setString(_languageKey, language.name);
+
+  /// The welcome pages are shown only until they have been seen once.
+  bool loadOnboardingSeen() => _prefs.getBool(_onboardingKey) ?? false;
+
+  Future<void> saveOnboardingSeen() => _prefs.setBool(_onboardingKey, true);
 }

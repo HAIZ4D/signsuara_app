@@ -7,15 +7,27 @@ import 'package:signsuara_app/custom/custom_gestures_page.dart';
 import 'package:signsuara_app/custom/record_gesture_page.dart';
 import 'package:signsuara_app/glove/glove_session.dart';
 import 'package:signsuara_app/main.dart';
+import 'package:signsuara_app/screens/splash_screen.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  // A returning user: the welcome pages were already seen (first launch: start_flow_test.dart).
+  setUp(() => SharedPreferences.setMockInitialValues({'onboarding_seen': true}));
+
+  Future<void> openApp(WidgetTester tester) async {
+    await tester.pumpWidget(const SignSuaraApp());
+    await tester.pump(); // storage read
+    await tester.pump(SplashScreen.duration);
+    // Wait until the splash has fully faded out (don't guess frame timings).
+    for (var i = 0; i < 30 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+  }
 
   testWidgets('app opens on Home: greeting, glove card (not connected), start card, empty history',
       (tester) async {
-    await tester.pumpWidget(const SignSuaraApp());
+    await openApp(tester);
     expect(find.textContaining('Assalamualaikum', findRichText: true), findsOneWidget);
     expect(find.textContaining('Guest', findRichText: true), findsOneWidget);
     expect(find.text('SignSuara Glove'), findsOneWidget);
@@ -32,7 +44,7 @@ void main() {
 
   testWidgets('the capsule tabs switch screens', (tester) async {
     final semantics = tester.ensureSemantics();
-    await tester.pumpWidget(const SignSuaraApp());
+    await openApp(tester);
     Future<void> openTab(String label) async {
       await tester.tap(find.bySemanticsLabel(label));
       await tester.pump(const Duration(milliseconds: 700));
