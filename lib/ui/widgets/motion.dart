@@ -165,6 +165,124 @@ class _FadeUpState extends State<FadeUp> with SingleTickerProviderStateMixin {
       );
 }
 
+/// A dot with a ring that pings outwards (design: `ping` animation on live dots).
+class PulseDot extends StatefulWidget {
+  const PulseDot({super.key, required this.color, this.size = 7, this.active = true});
+
+  final Color color;
+  final double size;
+  final bool active;
+
+  @override
+  State<PulseDot> createState() => _PulseDotState();
+}
+
+class _PulseDotState extends State<PulseDot> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1600));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(PulseDot old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  void _sync() => widget.active && !AppMotion.reduced(context) ? _c.repeat() : _c.reset();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dot = Container(
+      width: widget.size,
+      height: widget.size,
+      decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+    );
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          AnimatedBuilder(
+            animation: _c,
+            builder: (context, child) => Opacity(
+              opacity: (1 - _c.value) * 0.6,
+              child: Transform.scale(scale: 1 + _c.value * 1.4, child: child),
+            ),
+            child: dot,
+          ),
+          dot,
+        ],
+      ),
+    );
+  }
+}
+
+/// Three dots that "flow" from one side to the other (design: .cv-link).
+class FlowDots extends StatefulWidget {
+  const FlowDots({super.key, required this.color, this.reverse = false});
+
+  final Color color;
+  final bool reverse;
+
+  @override
+  State<FlowDots> createState() => _FlowDotsState();
+}
+
+class _FlowDotsState extends State<FlowDots> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < 3; i++) ...[
+              if (i > 0) const SizedBox(width: 4),
+              Builder(builder: (context) {
+                final k = widget.reverse ? 2 - i : i;
+                final wave = (sin((_c.value - k * 0.125) * 2 * pi) + 1) / 2; // 0..1
+                return Opacity(
+                  opacity: 0.25 + 0.75 * wave,
+                  child: Transform.scale(
+                    scale: 0.8 + 0.35 * wave,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ],
+        ),
+      );
+}
+
 /// Decorative animated bars (design: Waveform). Not a real audio level.
 class Waveform extends StatefulWidget {
   const Waveform({super.key, required this.color, this.bars = 26, this.height = 64, this.active = true});

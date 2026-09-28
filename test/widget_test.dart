@@ -40,7 +40,12 @@ void main() {
     expect(find.text('Learn and sign the Arabic letters'), findsOneWidget);
     expect(find.text('Coming soon'), findsOneWidget);
 
-    await openTab('Conversation'); // still the old screen until it is redesigned
+    await openTab('Conversation');
+    expect(find.text('Conversation'), findsWidgets);
+    expect(find.bySemanticsLabel('You sign'), findsOneWidget);
+    expect(find.bySemanticsLabel('They speak'), findsOneWidget);
+
+    await openTab('Hearing'); // still the old screen until it is redesigned
     expect(find.text('They said'), findsOneWidget);
     expect(find.text('Tap to talk'), findsOneWidget);
 

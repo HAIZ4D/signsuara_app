@@ -128,7 +128,8 @@ other recordings.
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
-| `lib/screens/` | redesigned screens (Home, Learn, …) |
+| `lib/screens/` | redesigned screens (Home, Conversation, Learn, …) |
+| `lib/history/` | the conversation shown as chat bubbles (signed and heard messages) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/home_page.dart` | the previous single screen, still used by tabs not yet redesigned |

@@ -76,7 +76,7 @@ class GloveCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: AppSpace.s),
-                _Action(link: link, ble: ble),
+                GloveActionButton(link: link, ble: ble),
               ],
             ),
           ],
@@ -110,8 +110,9 @@ class _Dot extends StatelessWidget {
       Container(width: 7, height: 7, decoration: BoxDecoration(color: color, shape: BoxShape.circle));
 }
 
-class _Action extends StatelessWidget {
-  const _Action({required this.link, required this.ble});
+/// Connect / Disconnect / spinner for the glove, as used on the glove card.
+class GloveActionButton extends StatelessWidget {
+  const GloveActionButton({super.key, required this.link, required this.ble});
 
   final GloveLink link;
   final GloveBle ble;

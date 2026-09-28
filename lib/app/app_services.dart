@@ -5,6 +5,7 @@ import '../app_storage.dart';
 import '../custom/custom_gestures.dart';
 import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
+import '../history/conversation_log.dart';
 import '../speech/sign_words.dart';
 import '../speech/speaker.dart';
 import '../speech/transcriber.dart';
@@ -18,18 +19,28 @@ class AppServices {
     speaker.lookup = words;
     session.addListener(_keepScreenOnWhileConnected);
     transcriber.addListener(_muteSpeakerWhileListening);
+    transcriber.addListener(_logTranscript);
   }
 
   final speaker = Speaker();
   final transcriber = Transcriber();
   final gestures = CustomGestures();
-  late final session = GloveSession(onGesture: speaker.say);
+  final log = ConversationLog();
+  late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
   var _screenOn = false;
 
   /// Everything a screen may need to redraw for.
-  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures]);
+  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log]);
+
+  /// A recognised sign: spoken (as before) and added to the conversation.
+  void _onGesture(String label) {
+    speaker.say(label);
+    log.addSigned(label);
+  }
+
+  void _logTranscript() => log.transcript(listening: transcriber.listening, text: transcriber.text);
 
   /// Shown on Home until Google login exists.
   String get userName => 'Guest';
@@ -75,11 +86,13 @@ class AppServices {
     if (_screenOn) WakelockPlus.disable();
     session.removeListener(_keepScreenOnWhileConnected);
     transcriber.removeListener(_muteSpeakerWhileListening);
+    transcriber.removeListener(_logTranscript);
     if (transcriber.listening) transcriber.stop();
     ble.disconnect();
     session.dispose();
     speaker.dispose();
     transcriber.dispose();
     gestures.dispose();
+    log.dispose();
   }
 }

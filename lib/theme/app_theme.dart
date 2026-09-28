@@ -38,7 +38,11 @@ abstract final class AppColors {
   static const live = Color(0xFF43E08A);
   static const liveText = Color(0xFF6FF0A6);
   static const danger = Color(0xFFE8485F);
+  static const warning = Color(0xFFEF6C00);
   static const offline = Color(0xFF6F86B6);
+  static const recDot = Color(0xFFFF5A72); // "LIVE" dot
+  static const recText = Color(0xFFFF8A9A);
+  static const chipOnStage = Color(0x8C04183A); // dark chip over the signer stage
 }
 
 abstract final class AppGradients {
@@ -82,6 +86,32 @@ abstract final class AppGradients {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [AppColors.turqBright, AppColors.blue600],
+  );
+  static const bubbleMe = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF19D0DF), AppColors.turq, Color(0xFF008896)],
+    stops: [0, 0.55, 1],
+  );
+  static const draft = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [AppColors.blue600, AppColors.blue],
+  );
+  static const stage = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF0A3A86), Color(0xFF03224F)],
+  );
+  static const stageGlow = RadialGradient(
+    center: Alignment(0, -0.28),
+    radius: 0.75,
+    colors: [Color(0x6113C6D6), Color(0x0013C6D6)],
+  );
+  static const finger = LinearGradient(
+    begin: Alignment.bottomCenter,
+    end: Alignment.topCenter,
+    colors: [AppColors.turq, Color(0xFF5FE6F0)],
   );
   static const navCapsule = LinearGradient(
     begin: Alignment.topCenter,
@@ -141,6 +171,8 @@ abstract final class AppShadows {
   static const turqTile = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
   static const blueTile = [BoxShadow(color: Color(0xE6002B66), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
   static const nav = [BoxShadow(color: Color(0xA6001440), blurRadius: 40, spreadRadius: -14, offset: Offset(0, 22))];
+  static const bubbleMe = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 24, spreadRadius: -14, offset: Offset(0, 12))];
+  static const dock = [BoxShadow(color: Color(0xCC002B66), blurRadius: 40, spreadRadius: -18, offset: Offset(0, 20))];
 }
 
 abstract final class AppMotion {
