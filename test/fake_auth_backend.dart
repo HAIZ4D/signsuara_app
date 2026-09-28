@@ -34,6 +34,16 @@ class FakeAuthBackend implements AuthBackend {
   @override
   GestureStore gesturesFor(AppUser user) => gestureStores.putIfAbsent(user.uid, FakeGestureStore.new);
 
+  /// Makes the next rename fail.
+  SignInFailure? renameFailure;
+
+  @override
+  Future<AppUser> rename(String name) async {
+    if (renameFailure case final failure?) throw failure;
+    final user = currentUser!;
+    return currentUser = AppUser(uid: user.uid, name: name, email: user.email, photoUrl: user.photoUrl);
+  }
+
   @override
   Future<void> signOut() async {
     currentUser = null;

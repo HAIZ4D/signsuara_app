@@ -7,6 +7,13 @@ const _months = [
 /// "Monday, 28 September" (Home greeting).
 String longDate(DateTime d) => '${_weekdays[d.weekday - 1]}, ${d.day} ${_months[d.month - 1]}';
 
+/// "Good morning" (5 AM to noon), "Good afternoon" (noon to 6 PM), otherwise "Good evening".
+String timeGreeting(DateTime t) => switch (t.hour) {
+      >= 5 && < 12 => 'Good morning',
+      >= 12 && < 18 => 'Good afternoon',
+      _ => 'Good evening',
+    };
+
 /// "10:32 AM"
 String clockTime(DateTime t) {
   final hour = t.hour % 12 == 0 ? 12 : t.hour % 12;

@@ -95,6 +95,26 @@ void main() {
     expect(find.text('Continue with Google'), findsOneWidget, reason: 'can sign in again');
   });
 
+  testWidgets('signed in: change the name in Profile (a guest has no name row)', (tester) async {
+    final services = await _pumpProfile(tester, account: Account(FakeAuthBackend(currentUser: testUser)));
+    await _scrollTo(tester, find.byTooltip('Change your name'));
+    expect(find.text('Test User · shown on Home'), findsOneWidget);
+    await tester.tap(find.byTooltip('Change your name'));
+    await _settle(tester);
+    expect(find.text('Change your name'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), 'Haizad');
+    await tester.pump();
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+
+    expect(services.account.name, 'Haizad');
+    expect(find.text('Haizad · shown on Home'), findsOneWidget);
+
+    await services.account.signOut();
+    await _settle(tester);
+    expect(find.byTooltip('Change your name'), findsNothing);
+  });
+
   testWidgets('About opens with the project name', (tester) async {
     await _pumpProfile(tester);
     await _scrollTo(tester, find.text('About SignSuara'));

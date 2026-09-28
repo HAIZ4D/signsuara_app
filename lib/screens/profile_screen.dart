@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_services.dart';
+import '../cloud/account.dart';
 import '../custom/custom_gestures_page.dart';
 import '../custom/gesture_backup.dart';
 import '../glove/glove_session.dart';
@@ -47,7 +48,7 @@ class ProfileScreen extends StatelessWidget {
                 _historyRow(context),
                 _backupRow(),
               ]),
-              _Group(rows: [_accountRow()]),
+              _Group(rows: [if (account.signedIn) _nameRow(context), _accountRow()]),
               if (account.error case final error?) Notice(message: error),
               if (!account.signedIn)
                 Padding(
@@ -142,6 +143,26 @@ class ProfileScreen extends StatelessWidget {
               onPressed: backup.state == BackupState.checking ? null : backup.syncNow,
             ),
     );
+  }
+
+  _Row _nameRow(BuildContext context) => _Row(
+        icon: Icons.badge_outlined,
+        title: 'Your name',
+        subtitle: '${services.account.name} · shown on Home',
+        trailing: IconButton(
+          tooltip: 'Change your name',
+          icon: const Icon(Icons.edit_rounded, color: AppColors.turq),
+          onPressed: services.account.busy ? null : () => _rename(context),
+        ),
+        onTap: services.account.busy ? null : () => _rename(context),
+      );
+
+  Future<void> _rename(BuildContext context) async {
+    final name = await showDialog<String>(
+      context: context,
+      builder: (_) => _NameDialog(current: services.account.name),
+    );
+    if (name != null) await services.account.rename(name);
   }
 
   _Row _accountRow() {
@@ -347,6 +368,48 @@ class _Row extends StatelessWidget {
           ),
         ),
       );
+}
+
+/// Asks for the new name (1 to 30 characters). Returns it, or null for Cancel.
+class _NameDialog extends StatefulWidget {
+  const _NameDialog({required this.current});
+
+  final String current;
+
+  @override
+  State<_NameDialog> createState() => _NameDialogState();
+}
+
+class _NameDialogState extends State<_NameDialog> {
+  late final _text = TextEditingController(text: widget.current);
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final name = _text.text.trim();
+    final ok = name.isNotEmpty && name != widget.current;
+    return AlertDialog(
+      title: const Text('Change your name'),
+      content: TextField(
+        controller: _text,
+        autofocus: true,
+        maxLength: Account.maxNameLength,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(labelText: 'Name', helperText: 'Shown on Home and saved to your account.'),
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => ok ? Navigator.pop(context, name) : null,
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        FilledButton(onPressed: ok ? () => Navigator.pop(context, name) : null, child: const Text('Save')),
+      ],
+    );
+  }
 }
 
 /// BM | EN switch for the speech language.

@@ -28,7 +28,7 @@ void main() {
     expect(SavedConversation.fromMap('x', {}), isNull);
   });
 
-  test('time labels', () {
+  test('time labels and the Home greeting', () {
     final now = DateTime(2026, 9, 29, 18);
     expect(clockTime(DateTime(2026, 9, 29, 0, 5)), '12:05 AM');
     expect(clockTime(DateTime(2026, 9, 29, 15, 0)), '3:00 PM');
@@ -37,5 +37,11 @@ void main() {
     expect(dayName(DateTime(2026, 9, 21), now: now), 'Mon 21 Sep');
     expect(dayName(DateTime(2025, 12, 31), now: now), 'Wed 31 Dec 2025');
     expect(longDate(now), 'Tuesday, 29 September');
+    expect(timeGreeting(DateTime(2026, 9, 29, 5)), 'Good morning');
+    expect(timeGreeting(DateTime(2026, 9, 29, 11, 59)), 'Good morning');
+    expect(timeGreeting(DateTime(2026, 9, 29, 12)), 'Good afternoon');
+    expect(timeGreeting(DateTime(2026, 9, 29, 17, 59)), 'Good afternoon');
+    expect(timeGreeting(DateTime(2026, 9, 29, 18)), 'Good evening');
+    expect(timeGreeting(DateTime(2026, 9, 29, 2)), 'Good evening', reason: 'late at night');
   });
 }

@@ -47,7 +47,9 @@ class FirebaseAuthBackend implements AuthBackend {
       await _google();
       final account = await GoogleSignIn.instance.authenticate();
       final credential = GoogleAuthProvider.credential(idToken: account.authentication.idToken);
-      final user = _toAppUser((await _auth.signInWithCredential(credential)).user);
+      final signedIn = (await _auth.signInWithCredential(credential)).user;
+      if (signedIn != null) await _restoreChosenName(signedIn);
+      final user = _toAppUser(_auth.currentUser);
       if (user != null) unawaited(_saveProfile(user)); // never makes sign-in wait
       return user;
     } on GoogleSignInException catch (e) {
@@ -74,6 +76,43 @@ class FirebaseAuthBackend implements AuthBackend {
   }
 
   @override
+  Future<AppUser> rename(String name) async {
+    final user = _auth.currentUser;
+    if (user == null) throw const SignInFailure('Sign in first.');
+    try {
+      await user.updateDisplayName(name);
+      await user.reload();
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Rename: ${e.code} ${e.message}');
+      throw SignInFailure(e.code == 'network-request-failed'
+          ? 'No internet connection. The name was not changed.'
+          : 'The name could not be changed (${e.code}).');
+    }
+    // Also kept in Firestore, so it can be put back if a later Google sign-in resets it.
+    unawaited(_profile(user.uid)
+        .set({'name': name, 'username': name}, SetOptions(merge: true))
+        .catchError((Object e) => debugPrint('Username not saved to Firestore: $e')));
+    return _toAppUser(_auth.currentUser)!;
+  }
+
+  /// A Google sign-in may set the Firebase name back to the Google one: put back the name the user
+  /// chose in Profile (users/{uid}.username). Any problem: keep the Google name.
+  Future<void> _restoreChosenName(User user) async {
+    try {
+      final chosen = (await _profile(user.uid).get().timeout(const Duration(seconds: 3))).data()?['username'];
+      if (chosen is String && chosen.isNotEmpty && chosen != user.displayName) {
+        await user.updateDisplayName(chosen);
+        await user.reload();
+      }
+    } catch (e) {
+      debugPrint('Chosen name not restored: $e');
+    }
+  }
+
+  DocumentReference<Map<String, dynamic>> _profile(String uid) =>
+      FirebaseFirestore.instance.collection('users').doc(uid);
+
+  @override
   HistoryStore historyFor(AppUser user) => FirestoreHistoryStore(user.uid);
 
   @override
@@ -83,7 +122,7 @@ class FirebaseAuthBackend implements AuthBackend {
   /// (e.g. Firestore rules not set yet): the app works the same without it.
   Future<void> _saveProfile(AppUser user) async {
     try {
-      final doc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final doc = _profile(user.uid);
       final isNew = !(await doc.get()).exists;
       await doc.set({
         'name': user.name,

@@ -13,7 +13,7 @@ class AppUser {
   final String? photoUrl;
 }
 
-/// Why sign-in didn't work, already in plain words for the screen.
+/// Why sign-in (or changing the name) didn't work, already in plain words for the screen.
 class SignInFailure implements Exception {
   const SignInFailure(this.message);
 
@@ -28,6 +28,9 @@ abstract class AuthBackend {
   Future<AppUser?> signInWithGoogle();
 
   Future<void> signOut();
+
+  /// Changes the name the app shows for the signed-in user. Throws [SignInFailure].
+  Future<AppUser> rename(String name);
 
   /// Where this user's conversations are kept.
   HistoryStore historyFor(AppUser user);
@@ -99,6 +102,30 @@ class Account extends ChangeNotifier {
     _busy = false;
     notifyListeners();
     return signedIn;
+  }
+
+  /// The longest name accepted (it has to fit the Home greeting).
+  static const maxNameLength = 30;
+
+  /// Signed in only: changes the name shown on Home and in Profile. True when it was saved.
+  Future<bool> rename(String name) async {
+    final backend = _backend;
+    final clean = name.trim();
+    if (backend == null || _user == null || clean.isEmpty || clean.length > maxNameLength) return false;
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await backend.rename(clean);
+    } on SignInFailure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = 'The name could not be changed. Check the internet and try again.';
+      debugPrint('Rename failed: $e');
+    }
+    _busy = false;
+    notifyListeners();
+    return _error == null;
   }
 
   Future<void> signOut() async {

@@ -11,6 +11,7 @@ import 'package:signsuara_app/main.dart';
 import 'package:signsuara_app/screens/profile_screen.dart';
 import 'package:signsuara_app/screens/splash_screen.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
+import 'package:signsuara_app/ui/time_label.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
 
 import 'fake_auth_backend.dart';
@@ -39,7 +40,7 @@ void main() {
   testWidgets('app opens on Home: greeting, glove card (not connected), start card, empty history',
       (tester) async {
     await openApp(tester);
-    expect(find.textContaining('Assalamualaikum', findRichText: true), findsOneWidget);
+    expect(find.textContaining(timeGreeting(DateTime.now()), findRichText: true), findsOneWidget);
     expect(find.textContaining('Guest', findRichText: true), findsOneWidget);
     expect(find.text('SignSuara Glove'), findsOneWidget);
     expect(find.text('NOT CONNECTED'), findsOneWidget);

@@ -16,8 +16,9 @@ Universiti Putra Malaysia (UPM).
   **conversation history** (read back or delete past conversations) and **backs up your custom
   gestures** (they come back after a reinstall or on a new phone). Guests can use everything on
   the phone; their conversations are kept until the app closes.
-- **Profile & settings**: glove connection, speech language, voice test, conversation history
-  (count, clear all), gesture backup (check now), Google account, about and licences.
+- **Profile & settings**: your name (change it when signed in), glove connection, speech
+  language, voice test, conversation history (count, clear all), gesture backup (check now),
+  Google account, about and licences. Home greets you by time of day ("Good morning", …).
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -142,7 +143,7 @@ other recordings.
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 116 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 119 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -188,7 +189,8 @@ Firebase project:
    ```
 
 Saved per user:
-- `users/{uid}`: name, email, photo link, first and last sign-in time.
+- `users/{uid}`: name, email, photo link, first and last sign-in time, and `username` when the
+  name was changed in Profile (the app puts it back if a later Google sign-in resets the name).
 - `users/{uid}/conversations/{id}`: `startedAt`, `updatedAt` and `messages`, a list of
   `{who: "me", label, malay, english, at}` (a sign, with its words at that moment) or
   `{who: "them", text, at}` (heard words). A conversation starts with the first message after

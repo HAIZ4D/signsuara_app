@@ -41,6 +41,29 @@ void main() {
     expect(account.error, isNull);
   });
 
+  test('a signed-in user can change the name the app shows', () async {
+    final backend = FakeAuthBackend(currentUser: testUser);
+    final account = Account(backend);
+    expect(await account.rename('  Haizad  '), isTrue);
+    expect(account.name, 'Haizad', reason: 'spaces trimmed');
+    expect(account.user?.email, 'test.user@example.com', reason: 'only the name changes');
+
+    expect(await account.rename(''), isFalse);
+    expect(await account.rename('x' * (Account.maxNameLength + 1)), isFalse);
+    expect(account.name, 'Haizad');
+
+    backend.renameFailure = const SignInFailure('No internet connection. The name was not changed.');
+    expect(await account.rename('Zad'), isFalse);
+    expect(account.error, contains('No internet'));
+    expect(account.name, 'Haizad');
+  });
+
+  test('a guest has no name to change', () async {
+    final account = Account(FakeAuthBackend());
+    expect(await account.rename('Haizad'), isFalse);
+    expect(account.name, 'Guest');
+  });
+
   test('without Firebase the app is guest-only and says so', () async {
     final account = Account(null);
     expect(await account.signIn(), isFalse);

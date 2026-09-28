@@ -139,7 +139,8 @@ class _Greeting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final date = longDate(DateTime.now());
+    final now = DateTime.now();
+    final date = longDate(now);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -151,7 +152,7 @@ class _Greeting extends StatelessWidget {
               const SizedBox(height: 6),
               Text.rich(
                 TextSpan(children: [
-                  const TextSpan(text: 'Assalamualaikum,\n'),
+                  TextSpan(text: '${timeGreeting(now)},\n'),
                   TextSpan(text: name, style: const TextStyle(color: AppColors.yellow)),
                 ]),
                 style: AppText.heroTitle,
