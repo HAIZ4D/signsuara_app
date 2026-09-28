@@ -12,6 +12,8 @@ Universiti Putra Malaysia (UPM).
 - **Speech output** in Malay or English (BM/EN switch, remembered after restart).
 - **Speech-to-text** for the hearing person: tap to talk, the text is shown large.
 - **Custom gestures**: record your own gesture on the phone and give it a Malay/English phrase.
+- **Optional Google sign-in** (Firebase): the app greets you by name. Guests can use everything
+  on the phone.
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -129,13 +131,14 @@ other recordings.
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
 | `lib/screens/` | redesigned screens (Home, Conversation, Hearing, Learn, …) |
+| `lib/cloud/` | sign-in: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (the only Firebase file) |
 | `lib/history/` | the conversation shown as chat bubbles (signed and heard messages) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 84 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 93 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -149,6 +152,39 @@ flutter run
 ```
 
 The app asks for the "Nearby devices" (Bluetooth) and microphone permissions when first needed.
+The Android build needs `android/app/google-services.json`, which is not in this repository:
+see [Firebase setup](#firebase-setup).
+
+## Firebase setup
+
+Google sign-in uses Firebase Authentication; the profile is saved in Cloud Firestore. The config
+file `android/app/google-services.json` is git-ignored, so each copy of the project uses its own
+Firebase project:
+
+1. Firebase console → Project settings → add an **Android app** with package
+   `com.haizad.signsuara`.
+2. Add the **SHA-1** (and SHA-256) of the key that signs the app. For debug builds (release builds
+   are signed with the same debug key for now):
+   ```
+   keytool -list -v -keystore ~/.android/debug.keystore -alias androiddebugkey -storepass android -keypass android
+   ```
+3. Authentication → Sign-in method → enable **Google**.
+4. Download `google-services.json` **after** steps 2 and 3 (only then does it contain the
+   `oauth_client` entries that Google sign-in needs) and put it in `android/app/`.
+5. Firestore → Rules: each user may only read and write their own data:
+   ```
+   rules_version = '2';
+   service cloud.firestore {
+     match /databases/{database}/documents {
+       match /users/{uid}/{document=**} {
+         allow read, write: if request.auth != null && request.auth.uid == uid;
+       }
+     }
+   }
+   ```
+
+Saved per user: `users/{uid}` = name, email, photo link, first and last sign-in time.
+Without an account (guest) nothing is sent to Firebase.
 
 ## Adding a new built-in sign
 
@@ -162,6 +198,7 @@ never hardcodes the labels, the number of classes or the window size.
 
 - **Single user**: the model is trained on one person's recordings. Supporting other users would
   need recordings from more people and/or a per-user calibration step.
+- Google sign-in needs internet (the rest of the app works without an account).
 - Speech-to-text normally needs internet; the Malay voice depends on the phone's TTS engine.
 - Custom gestures are compared with the built-in signs, not with each other, so keep them
   clearly different.
@@ -175,4 +212,6 @@ never hardcodes the labels, the number of classes or the window size.
 | `speech_to_text` | speech recognition | BSD-3-Clause |
 | `wakelock_plus` | keep the screen on | BSD-3-Clause |
 | `shared_preferences` | saved data | BSD-3-Clause |
+| `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
+| `google_sign_in` | Google account picker | BSD-3-Clause |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline | SIL Open Font License 1.1 |

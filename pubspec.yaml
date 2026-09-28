@@ -39,6 +39,10 @@ dependencies:
   wakelock_plus: ^1.4.0
   speech_to_text: ^7.4.0
   shared_preferences: ^2.5.3
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^6.10.0
 
 dev_dependencies:
   flutter_test:

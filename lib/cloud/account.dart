@@ -1,0 +1,89 @@
+import 'package:flutter/foundation.dart';
+
+/// A signed-in Google user: only what the app shows and saves (no tokens).
+class AppUser {
+  const AppUser({required this.uid, required this.name, required this.email, this.photoUrl});
+
+  final String uid;
+  final String name;
+  final String email;
+  final String? photoUrl;
+}
+
+/// Why sign-in didn't work, already in plain words for the screen.
+class SignInFailure implements Exception {
+  const SignInFailure(this.message);
+
+  final String message;
+}
+
+/// Where sign-in really happens: Firebase on the phone (firebase_auth_backend.dart), a fake in tests.
+abstract class AuthBackend {
+  AppUser? get currentUser;
+
+  /// Opens Google's account picker. Null = the user closed it. Throws [SignInFailure].
+  Future<AppUser?> signInWithGoogle();
+
+  Future<void> signOut();
+}
+
+/// Who is using the app: a Google account, or a guest (no account, no cloud features).
+/// Signing in stays remembered by Firebase until [signOut].
+class Account extends ChangeNotifier {
+  /// [backend] null = Firebase could not start: guest only.
+  Account(this._backend) : _user = _backend?.currentUser;
+
+  final AuthBackend? _backend;
+  AppUser? _user;
+  var _busy = false;
+  String? _error;
+
+  AppUser? get user => _user;
+  bool get signedIn => _user != null;
+  bool get busy => _busy;
+
+  /// The last sign-in problem, or null.
+  String? get error => _error;
+
+  /// The name used across the app: the Google account's name, or "Guest".
+  String get name {
+    final user = _user;
+    if (user == null) return 'Guest';
+    return user.name.trim().isNotEmpty ? user.name.trim() : user.email.split('@').first;
+  }
+
+  /// True when signed in afterwards.
+  Future<bool> signIn() async {
+    final backend = _backend;
+    if (backend == null) {
+      _error = 'Sign-in is not available right now. You can continue as a guest.';
+      notifyListeners();
+      return false;
+    }
+    _busy = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await backend.signInWithGoogle() ?? _user;
+    } on SignInFailure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = 'Sign-in failed. Please try again.';
+      debugPrint('Sign-in failed: $e');
+    }
+    _busy = false;
+    notifyListeners();
+    return signedIn;
+  }
+
+  Future<void> signOut() async {
+    try {
+      await _backend?.signOut();
+    } catch (e) {
+      debugPrint('Sign-out problem: $e');
+    }
+    _user = null;
+    _error = null;
+    notifyListeners();
+  }
+}

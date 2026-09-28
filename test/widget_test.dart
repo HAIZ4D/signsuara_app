@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/custom/custom_gesture.dart';
 import 'package:signsuara_app/custom/custom_gestures.dart';
 import 'package:signsuara_app/custom/custom_gestures_page.dart';
@@ -11,18 +12,27 @@ import 'package:signsuara_app/screens/splash_screen.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
 
+import 'fake_auth_backend.dart';
+
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
-  // Open the app like on the phone: splash, then Skip the welcome pages (those: start_flow_test.dart).
-  Future<void> openApp(WidgetTester tester) async {
-    await tester.pumpWidget(const SignSuaraApp());
+  // Open the app like on the phone: splash, Skip the welcome pages, continue as a guest
+  // (those screens: start_flow_test.dart).
+  Future<void> openApp(WidgetTester tester, [Account? account]) async {
+    await tester.pumpWidget(SignSuaraApp(account: account ?? Account(FakeAuthBackend())));
     for (var i = 0; i < 50 && find.byType(SplashScreen).evaluate().isNotEmpty; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.tap(find.text('Skip'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    Future<void> tap(String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.tap(find.text(text));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    }
+
+    await tap('Skip');
+    if (!(account?.signedIn ?? false)) await tap('Continue as guest');
   }
 
   testWidgets('app opens on Home: greeting, glove card (not connected), start card, empty history',
@@ -68,6 +78,25 @@ void main() {
 
     await openTab('Home');
     expect(find.text('Sign it, and be heard'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('Profile: the account, and signing out makes Home say Guest', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await openApp(tester, Account(FakeAuthBackend(currentUser: testUser)));
+    expect(find.textContaining('Test User', findRichText: true), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Profile').first);
+    await tester.pumpAndSettle();
+    expect(find.text('test.user@example.com'), findsOneWidget);
+    await tester.tap(find.text('Sign out'));
+    await tester.pump();
+    expect(find.text('Continue with Google'), findsOneWidget, reason: 'can sign in again from here');
+
+    await tester.pageBack();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700)); // Home keeps moving: no pumpAndSettle
+    expect(find.textContaining('Guest', findRichText: true), findsOneWidget);
     semantics.dispose();
   });
 

@@ -6,6 +6,7 @@ import '../theme/app_theme.dart';
 import '../ui/widgets/glove_card.dart';
 import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
+import '../ui/widgets/user_avatar.dart';
 
 /// Home dashboard (design: home.jsx). Only real data: no battery, no invented stats.
 class HomeScreen extends StatelessWidget {
@@ -34,7 +35,11 @@ class HomeScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        FadeUp(child: _Greeting(name: services.userName, onAvatar: onOpenProfile)),
+                        FadeUp(
+                          child: _Greeting(
+                              name: services.userName,
+                              photoUrl: services.account.user?.photoUrl,
+                              onAvatar: onOpenProfile)),
                         const SizedBox(height: AppSpace.xl),
                         FadeUp(
                           delay: const Duration(milliseconds: 100),
@@ -118,9 +123,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _Greeting extends StatelessWidget {
-  const _Greeting({required this.name, required this.onAvatar});
+  const _Greeting({required this.name, required this.photoUrl, required this.onAvatar});
 
   final String name;
+  final String? photoUrl;
   final VoidCallback onAvatar;
 
   static const _days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -155,26 +161,14 @@ class _Greeting extends StatelessWidget {
         Semantics(
           button: true,
           label: 'Profile',
+          excludeSemantics: true, // just "Profile", not the letter inside the avatar
           child: InkWell(
             onTap: onAvatar,
             borderRadius: BorderRadius.circular(17),
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.avatar,
-                    borderRadius: BorderRadius.circular(17),
-                    border: Border.all(color: AppColors.glassBorder, width: 1.5),
-                  ),
-                  child: Text(
-                    name.isEmpty ? '?' : name[0].toUpperCase(),
-                    style: AppText.cardTitle.copyWith(fontSize: 19, fontWeight: FontWeight.w800),
-                  ),
-                ),
+                UserAvatar(name: name, photoUrl: photoUrl),
                 Positioned(
                   right: -3,
                   top: -3,

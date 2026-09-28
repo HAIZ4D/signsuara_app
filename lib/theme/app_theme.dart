@@ -43,6 +43,14 @@ abstract final class AppColors {
   static const recDot = Color(0xFFFF5A72); // "LIVE" dot
   static const recText = Color(0xFFFF8A9A);
   static const chipOnStage = Color(0x8C04183A); // dark chip over the signer stage
+
+  // "Continue with Google" button: colours required by Google's sign-in branding rules
+  static const googleFill = Color(0xFFFFFFFF);
+  static const googleText = Color(0xFF1F1F1F);
+  static const googleBlue = Color(0xFF4285F4);
+  static const googleGreen = Color(0xFF34A853);
+  static const googleYellow = Color(0xFFFBBC05);
+  static const googleRed = Color(0xFFEA4335);
 }
 
 abstract final class AppGradients {

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../app_storage.dart';
+import '../cloud/account.dart';
 import '../custom/custom_gestures.dart';
 import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
@@ -14,7 +15,8 @@ import '../speech/transcriber.dart';
 /// saved settings. Created once by the app shell, so every tab uses the SAME glove connection.
 /// The wiring below was moved unchanged from the old single home page.
 class AppServices {
-  AppServices() {
+  /// [account] null = a guest (tests).
+  AppServices({Account? account}) : account = account ?? Account(null) {
     session.customMatch = (features) => gestures.matcher.match(features);
     speaker.lookup = words;
     session.addListener(_keepScreenOnWhileConnected);
@@ -22,6 +24,7 @@ class AppServices {
     transcriber.addListener(_logTranscript);
   }
 
+  final Account account;
   final speaker = Speaker();
   final transcriber = Transcriber();
   final gestures = CustomGestures();
@@ -32,7 +35,7 @@ class AppServices {
   var _screenOn = false;
 
   /// Everything a screen may need to redraw for.
-  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log]);
+  Listenable get changes => Listenable.merge([session, speaker, transcriber, gestures, log, account]);
 
   /// A recognised sign: spoken (as before) and added to the conversation.
   void _onGesture(String label) {
@@ -42,8 +45,8 @@ class AppServices {
 
   void _logTranscript() => log.transcript(listening: transcriber.listening, text: transcriber.text);
 
-  /// Shown on Home until Google login exists.
-  String get userName => 'Guest';
+  /// The Google account's name, or "Guest".
+  String get userName => account.name;
 
   Future<void> start() async {
     try {

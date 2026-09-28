@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../cloud/account.dart';
 import '../custom/custom_gestures_page.dart';
 import '../screens/conversation_screen.dart';
 import '../screens/hearing_screen.dart';
@@ -12,14 +13,16 @@ import 'app_services.dart';
 
 /// The 5 tabs + floating capsule nav. Owns the shared [AppServices] (one glove connection).
 class AppShell extends StatefulWidget {
-  const AppShell({super.key});
+  const AppShell({super.key, required this.account});
+
+  final Account account;
 
   @override
   State<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends State<AppShell> {
-  final services = AppServices();
+  late final services = AppServices(account: widget.account);
   var _tab = 0;
 
   static const _items = [
@@ -57,7 +60,7 @@ class _AppShellState extends State<AppShell> {
                 services: services,
                 onOpenTab: _go,
                 onOpenProfile: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => ProfileScreen(name: services.userName)),
+                  MaterialPageRoute<void>(builder: (_) => ProfileScreen(account: services.account)),
                 ),
               ),
               ConversationScreen(services: services),
