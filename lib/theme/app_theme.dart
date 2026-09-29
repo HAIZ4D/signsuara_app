@@ -42,7 +42,9 @@ abstract final class AppColors {
   static const offline = Color(0xFF6F86B6);
   static const recDot = Color(0xFFFF5A72); // "LIVE" dot
   static const recText = Color(0xFFFF8A9A);
-  static const chipOnStage = Color(0x8C04183A); // dark chip over the signer stage
+  static const chipOnStage = Color(0x8C04183A); // dark chip over a dark stage
+  static const haloDash = Color(0x5200A4B4); // turquoise 32 %: dashed ring behind the signer
+  static const haloRing = Color(0x73FFC82D); // yellow 45 %: thin inner ring behind the signer
 
   // "Continue with Google" button: colours required by Google's sign-in branding rules
   static const googleFill = Color(0xFFFFFFFF);
@@ -121,6 +123,31 @@ abstract final class AppGradients {
     center: Alignment(0, -0.28),
     radius: 0.75,
     colors: [Color(0x6113C6D6), Color(0x0013C6D6)],
+  );
+  /// The Listen screen's light "studio" stage: white at the top, a cool blue-grey at the bottom.
+  static const studio = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFFFFFFFF), Color(0xFFE6EEF9)],
+  );
+  /// Soft turquoise spotlight on the signer's upper body.
+  static const spotlight = RadialGradient(
+    center: Alignment(0, -0.32),
+    radius: 0.78,
+    colors: [Color(0x3813C6D6), Color(0x0013C6D6)],
+  );
+  /// Warm yellow glow rising from the bottom of the stage.
+  static const stageWarm = RadialGradient(
+    center: Alignment(0, 1.1),
+    radius: 0.75,
+    colors: [Color(0x26FFC82D), Color(0x00FFC82D)],
+  );
+  /// Mask that fades the bottom edge of the signer clip into the stage (the clip is cut at the skirt).
+  static const avatarFade = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Color(0xFF000000), Color(0xFF000000), Color(0x00000000)],
+    stops: [0, 0.9, 1],
   );
   /// Border that slowly turns around the Hearing stage and the mic ring (design: conic border).
   static const stageBorder = SweepGradient(colors: [

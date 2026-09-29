@@ -43,12 +43,11 @@ class _HearingScreenState extends State<HearingScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppGradients.deep),
+      value: SystemUiOverlayStyle.light, // the hero behind the status bar is dark
+      child: ColoredBox(
+        color: AppColors.bg,
         child: Stack(
           children: [
-            const Positioned.fill(child: Aurora()),
             ListenableBuilder(
               listenable: s.changes,
               builder: (context, _) {
@@ -74,11 +73,11 @@ class _HearingScreenState extends State<HearingScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
+                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
                       child: _EarlierCard(lines: earlier, listening: listening),
                     ),
                     SizedBox(
-                      height: 56,
+                      height: 58,
                       child: ListView(
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
@@ -114,44 +113,58 @@ class _HearingScreenState extends State<HearingScreen> {
       l == SpeechLanguage.malay ? SpeechLanguage.english : SpeechLanguage.malay;
 }
 
+/// The title on the dark hero. The hero reaches [overlap] below the title, behind the top of the
+/// light stage, so the stage floats over its edge like the cards on Home and Gestures.
 class _Head extends StatelessWidget {
   const _Head({required this.language, required this.onSwitch});
+
+  static const overlap = 124.0;
 
   final SpeechLanguage language;
   final VoidCallback onSwitch;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: EdgeInsets.fromLTRB(24, MediaQuery.paddingOf(context).top + AppSpace.s, 20, 0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(children: [
-                    const Icon(Icons.volume_up_rounded, size: 14, color: AppColors.yellow),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text('HEARING MODE',
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.eyebrow.copyWith(color: AppColors.yellow, fontSize: 12)),
-                    ),
-                  ]),
-                  const SizedBox(height: 6),
-                  Text("Speak, and they'll see it", style: AppText.screenTitle.copyWith(fontSize: 22)),
-                ],
-              ),
+  Widget build(BuildContext context) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Positioned(left: 0, right: 0, top: 0, bottom: -overlap, child: RepaintBoundary(child: _HeroBackdrop())),
+          Padding(
+            padding: EdgeInsets.fromLTRB(24, MediaQuery.paddingOf(context).top + AppSpace.s, 18, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  const ExcludeSemantics(child: Icon(Icons.volume_up_rounded, size: 14, color: AppColors.yellow)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text('HEARING MODE',
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.eyebrow.copyWith(color: AppColors.yellow, fontSize: 12)),
+                  ),
+                  GlassChip(
+                    icon: Icons.language_rounded,
+                    label: '${language.displayName} → text',
+                    tooltip: 'Listen for ${language == SpeechLanguage.malay ? 'English' : 'Malay'} instead',
+                    onTap: onSwitch,
+                  ),
+                ]),
+                const SizedBox(height: AppSpace.xs),
+                Text("Speak, and they'll see it", style: AppText.screenTitle.copyWith(fontSize: 22)),
+              ],
             ),
-            GlassChip(
-              icon: Icons.language_rounded,
-              label: '${language.displayName} → text',
-              tooltip: 'Listen for ${language == SpeechLanguage.malay ? 'English' : 'Malay'} instead',
-              onTap: onSwitch,
-            ),
-          ],
-        ),
+          ),
+        ],
+      );
+}
+
+/// The dark-blue hero with drifting colour blobs and round bottom corners (as on the other tabs).
+class _HeroBackdrop extends StatelessWidget {
+  const _HeroBackdrop();
+
+  @override
+  Widget build(BuildContext context) => const ClipRRect(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.hero)),
+        child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.deep), child: Aurora()),
       );
 }
 
@@ -176,38 +189,45 @@ class _Stage extends StatelessWidget {
     final live = avatar ? signer.signing : listening;
 
     return Container(
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), boxShadow: AppShadows.turqGlow),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), boxShadow: AppShadows.pop),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(30),
         child: Stack(
           children: [
-            // Turning colour border, 1.5 px wide.
+            // Turning brand-colour border, 2 px wide.
             Positioned.fill(
-              child: Spin(
-                child: Transform.scale(
-                  scale: 1.6,
-                  child: const DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageBorder)),
+              child: RepaintBoundary(
+                child: Spin(
+                  child: Transform.scale(
+                    scale: 1.6,
+                    child: const DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageBorder)),
+                  ),
                 ),
               ),
             ),
             Positioned.fill(
               child: Padding(
-                padding: const EdgeInsets.all(1.5),
+                padding: const EdgeInsets.all(2),
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28.5),
+                  borderRadius: BorderRadius.circular(28),
                   child: Container(
-                    decoration: const BoxDecoration(gradient: AppGradients.stage),
+                    decoration: const BoxDecoration(gradient: AppGradients.studio),
                     child: Stack(
                       children: [
-                        // The glow sits behind everything, so the signer's colours stay true.
+                        // A light studio: a turquoise spotlight on the signer, a warm glow from below.
                         const Positioned.fill(
-                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageGlow)),
+                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.spotlight)),
+                        ),
+                        const Positioned.fill(
+                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageWarm)),
                         ),
                         const Positioned(
-                          top: 18,
+                          top: 22,
                           left: 0,
                           right: 0,
-                          child: Center(child: Spin(period: Duration(seconds: 40), child: _Halo(size: 200))),
+                          child: Center(
+                            child: RepaintBoundary(child: Spin(period: Duration(seconds: 40), child: _Halo(size: 236))),
+                          ),
                         ),
                         if (avatar)
                           Positioned.fill(
@@ -217,8 +237,17 @@ class _Stage extends StatelessWidget {
                               child: LayoutBuilder(
                                 builder: (context, box) => Column(
                                   children: [
-                                    // the signer gets all the room the words don't need
-                                    Expanded(child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
+                                    // the signer gets all the room the words don't need; her clip is
+                                    // cut at the skirt, so its bottom edge fades into the stage
+                                    Expanded(
+                                      child: ExcludeSemantics(
+                                        child: ShaderMask(
+                                          blendMode: BlendMode.dstIn,
+                                          shaderCallback: AppGradients.avatarFade.createShader,
+                                          child: SignPlayerView(player: signer.player),
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(height: AppSpace.s),
                                     ConstrainedBox(
                                       // long words take at most a third; on a short screen they give way
@@ -228,7 +257,7 @@ class _Stage extends StatelessWidget {
                                               textAlign: TextAlign.center,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
-                                              style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 14))
+                                              style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 14))
                                           : _SignedSentence(
                                               text: text,
                                               steps: signs,
@@ -256,8 +285,9 @@ class _Stage extends StatelessWidget {
                                       child: AnimatedDefaultTextStyle(
                                         duration: AppMotion.fast,
                                         style: empty
-                                            ? AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 15)
-                                            : AppText.heroTitle.copyWith(fontSize: large ? 36 : 27, height: 1.3),
+                                            ? AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 15)
+                                            : AppText.heroTitle
+                                                .copyWith(color: AppColors.ink, fontSize: large ? 36 : 27, height: 1.3),
                                         child: Text(
                                             empty
                                                 ? (listening
@@ -284,21 +314,20 @@ class _Stage extends StatelessWidget {
                               PulseDot(color: live ? AppColors.live : AppColors.offline, active: live),
                               const SizedBox(width: 7),
                               Text(avatar ? 'BIM signer' : 'BIM signer · coming soon',
-                                  style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
+                                  style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
                             ]),
                           ),
                         ),
                         if (avatar)
                           Positioned(
-                            top: 8,
-                            right: 8,
+                            top: 4,
+                            right: 4,
                             child: Row(children: [
                               _StageButton(
                                 icon: Icons.replay_rounded,
                                 label: 'Sign it again',
                                 onTap: ours && signer.canReplay ? signer.replay : null,
                               ),
-                              const SizedBox(width: 6),
                               _StageButton(
                                 icon: Icons.slow_motion_video_rounded,
                                 label: 'Slower signing',
@@ -349,7 +378,7 @@ class _SignedSentence extends StatelessWidget {
         text: text.substring(step.start, step.end),
         style: i == current
             ? const TextStyle(color: AppColors.onYellow, backgroundColor: AppColors.yellow)
-            : (signed(i) ? null : const TextStyle(color: AppColors.onDarkFaint)),
+            : (signed(i) ? null : const TextStyle(color: AppColors.inkFaint)), // large text: 3:1 is enough
       ));
       at = step.end;
     }
@@ -363,7 +392,9 @@ class _SignedSentence extends StatelessWidget {
         children: [
           Flexible(
             child: Text.rich(
-              TextSpan(style: AppText.heroTitle.copyWith(fontSize: large ? 26 : 20, height: 1.35), children: spans),
+              TextSpan(
+                  style: AppText.heroTitle.copyWith(color: AppColors.ink, fontSize: large ? 26 : 20, height: 1.35),
+                  children: spans),
               textAlign: TextAlign.center,
               maxLines: 4,
               overflow: TextOverflow.ellipsis,
@@ -374,7 +405,7 @@ class _SignedSentence extends StatelessWidget {
               child: Text('Grey words have no sign clip yet.',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.small.copyWith(color: AppColors.onDarkFaint, fontSize: 12)),
+                  style: AppText.small.copyWith(color: AppColors.inkSoft, fontSize: 12)),
             ),
         ],
       ),
@@ -403,15 +434,23 @@ class _StageButton extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             customBorder: const CircleBorder(),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected ? AppColors.turqDeep : AppColors.chipOnStage,
-                border: Border.all(color: selected ? AppColors.turqBright : AppColors.glassBorder),
+            child: SizedBox.square(
+              dimension: 48, // the tap area; the circle drawn inside is 40
+              child: Center(
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? AppColors.turq : AppColors.surface,
+                    border: Border.all(color: selected ? AppColors.turq : AppColors.line),
+                    boxShadow: AppShadows.blueTile,
+                  ),
+                  child: Icon(icon,
+                      size: 18,
+                      color: selected ? AppColors.onDark : (onTap == null ? AppColors.inkFaint : AppColors.ink)),
+                ),
               ),
-              child: Icon(icon, size: 18, color: onTap == null ? AppColors.onDarkFaint : AppColors.onDark),
             ),
           ),
         ),
@@ -440,15 +479,15 @@ class _SignChips extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.chipOnStage,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: step.spelled ? AppColors.glassBorder : AppColors.turq),
+                border: Border.all(color: step.spelled ? AppColors.line : AppColors.turq),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (step.spelled) ...[
-                    const Icon(Icons.abc_rounded, size: 18, color: AppColors.onDarkFaint),
+                    const Icon(Icons.abc_rounded, size: 18, color: AppColors.inkSoft),
                     const SizedBox(width: 4),
                   ],
                   Text(step.label,
@@ -456,7 +495,7 @@ class _SignChips extends StatelessWidget {
                         fontFamily: AppFonts.display,
                         fontSize: 12,
                         letterSpacing: 0.8,
-                        color: step.spelled ? AppColors.onDarkSoft : AppColors.turqBright,
+                        color: step.spelled ? AppColors.inkSoft : AppColors.turqDeep,
                       )),
                 ],
               ),
@@ -475,7 +514,11 @@ class _StageChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-        decoration: BoxDecoration(color: AppColors.chipOnStage, borderRadius: BorderRadius.circular(AppRadius.pill)),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(color: AppColors.line),
+        ),
         child: child,
       );
 }
@@ -496,7 +539,7 @@ class _HaloPainter extends CustomPainter {
     final c = size.center(Offset.zero);
     final r = size.width / 2;
     final dash = Paint()
-      ..color = AppColors.onDark.withValues(alpha: 0.14)
+      ..color = AppColors.haloDash
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
     const n = 48;
@@ -508,7 +551,7 @@ class _HaloPainter extends CustomPainter {
       c,
       r - 22,
       Paint()
-        ..color = AppColors.yellow.withValues(alpha: 0.16)
+        ..color = AppColors.haloRing
         ..strokeWidth = 1
         ..style = PaintingStyle.stroke,
     );
@@ -531,20 +574,22 @@ class _EarlierCard extends StatelessWidget {
       height: 88, // kept low so the signer's stage gets the height
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       decoration: BoxDecoration(
-        color: AppColors.glass,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.glassBorder),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('WHAT THEY SAID', style: AppText.eyebrow.copyWith(color: AppColors.onDarkFaint)),
+            const ExcludeSemantics(child: Icon(Icons.history_rounded, size: 15, color: AppColors.turq)),
+            const SizedBox(width: 6),
+            Text('WHAT THEY SAID', style: AppText.eyebrow.copyWith(color: AppColors.inkSoft)),
             const Spacer(),
             if (listening) ...[
               const PulseDot(color: AppColors.yellow),
               const SizedBox(width: 6),
-              Text('Transcribing', style: AppText.eyebrow.copyWith(color: AppColors.yellow, letterSpacing: 0)),
+              Text('Transcribing', style: AppText.eyebrow.copyWith(color: AppColors.onYellowInk, letterSpacing: 0)),
             ],
           ]),
           const SizedBox(height: 6),
@@ -556,7 +601,7 @@ class _EarlierCard extends StatelessWidget {
                         'Earlier sentences are kept here. Quick replies below work without speaking.',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 13),
+                        style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 13),
                       ))
                 : ListView(
                     reverse: true,
@@ -568,12 +613,12 @@ class _EarlierCard extends StatelessWidget {
                           child: Text(line,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: AppText.strong.copyWith(color: AppColors.onDark.withValues(alpha: 0.75))),
+                              style: AppText.strong.copyWith(color: AppColors.ink)),
                         ),
                     ],
                   ),
           ),
-          if (listening) const Waveform(color: AppColors.yellow, bars: 34, height: 18),
+          if (listening) const Waveform(color: AppColors.turq, bars: 34, height: 18),
         ],
       ),
     );
@@ -598,13 +643,13 @@ class _QuickChip extends StatelessWidget {
             },
             customBorder: const StadiumBorder(),
             child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.glass,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.glassBorder),
+                border: Border.all(color: AppColors.line),
               ),
-              child: Text(text, style: AppText.label.copyWith(color: AppColors.onDark, fontSize: 13)),
+              child: Text(text, style: AppText.label.copyWith(color: AppColors.ink, fontSize: 13)),
             ),
           ),
         ),
@@ -639,7 +684,7 @@ class _Foot extends StatelessWidget {
             tooltip: large ? 'Normal text size' : 'Bigger text',
             selected: large,
             onTap: onToggleSize,
-            child: Text('Aa', style: AppText.label.copyWith(color: AppColors.onDark, fontWeight: FontWeight.w800, fontSize: 14)),
+            child: Text('Aa', style: AppText.label.copyWith(color: AppColors.ink, fontWeight: FontWeight.w800, fontSize: 14)),
           ),
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -649,14 +694,14 @@ class _Foot extends StatelessWidget {
               ExcludeSemantics(
                 // The mic button already says this to screen readers; don't read it twice.
                 child: Text(listening ? 'Listening' : 'Tap to speak',
-                    style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 12)),
+                    style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 12)),
               ),
             ],
           ),
           _SideButton(
             tooltip: 'Clear conversation',
             onTap: canClear ? onClear : null,
-            child: const Icon(Icons.delete_sweep_rounded, color: AppColors.onDark, size: 20),
+            child: const Icon(Icons.delete_sweep_rounded, color: AppColors.ink, size: 20),
           ),
         ],
       ),
@@ -688,9 +733,9 @@ class _SideButton extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: selected ? AppColors.turq.withValues(alpha: 0.22) : AppColors.glass,
+                    color: selected ? AppColors.turq.withValues(alpha: 0.14) : AppColors.surface,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: selected ? AppColors.turqBright.withValues(alpha: 0.5) : AppColors.glassBorder),
+                    border: Border.all(color: selected ? AppColors.turq : AppColors.line),
                   ),
                   child: Center(child: child),
                 ),
