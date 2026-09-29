@@ -149,10 +149,21 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   optional `rest.webp` shows the avatar standing ready.
 - **Limitation:** the signing follows the spoken word order (signed Malay or English, word by
   word). Full BIM grammar, facial grammar and use of space are not modelled.
-- **The avatar** is a downloaded VRoid character, animated in Blender and rendered to clips. Its
-  licence does not allow sharing the model file, so it is not in this repository
-  (`character/` is git-ignored) and the app only contains rendered clips. The author is credited
-  in the app once the clips are added.
+- **The avatar** is the VRoid character "FREE MODEL 青髪三つ編みメガネっ子" by 水銀メイド (VRoid Hub),
+  animated in Blender and rendered to clips. Its licence requires credit (in the app: Profile →
+  About → View licenses) and does not allow sharing the model file, so the model and the Blender
+  file are not in this repository (`character/` and `*.vrm` are git-ignored); the app contains
+  only rendered clips.
+- **Making clips:** in Blender, each sign is an action named `sign:<id>` on the character's
+  armature (with a manual frame range, starting and ending in the rest pose; `sign:rest` is the
+  avatar standing ready, hands together in front of the waist). The scene has a front camera on
+  the signing space, soft lights and a transparent background at 800 px, 24 fps.
+  1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
+     `character/renders/<id>/0001.png …`;
+  2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
+     (400 px). The app picks the new clips up by itself.
+- **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
+  note; the avatar signs the rest.
 
 ## Measurements
 
@@ -181,8 +192,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
-| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips |
-| `test/` | 150 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
+| `test/` | 152 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -296,4 +307,5 @@ never hardcodes the labels, the number of classes or the window size.
 | `google_sign_in` | Google account picker | BSD-3-Clause |
 | `firebase_storage` | profile photos | BSD-3-Clause |
 | `image_picker` | take or choose a profile photo | Apache-2.0 / BSD-3-Clause |
+| BIM signer character | "FREE MODEL 青髪三つ編みメガネっ子" by 水銀メイド (VRoid Hub); only rendered clips are included | VRoid Hub conditions set by the author (credit required, no redistribution of the model) |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

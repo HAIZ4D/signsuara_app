@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
 import 'package:signsuara_app/history/conversation_log.dart';
 import 'package:signsuara_app/screens/conversation_screen.dart';
+import 'package:signsuara_app/signer/sign_clips.dart';
 import 'package:signsuara_app/signer/sign_player_view.dart';
 import 'package:signsuara_app/signer/signer.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
@@ -20,7 +21,8 @@ Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer}) async {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
   }
-  final services = AppServices(signer: signer);
+  // Without test clips: a signer with none, whatever clips the app itself ships.
+  final services = AppServices(signer: signer ?? Signer(library: Future.value(const SignClipLibrary({}))));
   addTearDown(services.dispose);
   await tester.pumpWidget(MaterialApp(
     theme: buildAppTheme(),

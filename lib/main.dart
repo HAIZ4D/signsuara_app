@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-import 'app/font_licences.dart';
+import 'app/licences.dart';
 import 'app/start_flow.dart';
 import 'cloud/account.dart';
 import 'cloud/firebase_auth_backend.dart';
@@ -9,7 +9,7 @@ import 'theme/app_theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  LicenseRegistry.addLicense(fontLicences);
+  LicenseRegistry.addLicense(appLicences);
   runApp(SignSuaraApp(account: Account(await FirebaseAuthBackend.start())));
 }
 

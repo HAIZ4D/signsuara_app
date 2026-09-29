@@ -21,6 +21,7 @@ class Signer extends ChangeNotifier {
   var _sentence = '';
   List<SignStep> _steps = const [];
   List<int> _stepOfClip = const [];
+  Set<int> _signedSteps = const {};
 
   /// The words being signed, and how (see [SignTranslator]).
   String get sentence => _sentence;
@@ -34,6 +35,12 @@ class Signer extends ChangeNotifier {
 
   /// The word (step) being signed now, to highlight it; null when not signing.
   int? get currentStep => signing && player.index < _stepOfClip.length ? _stepOfClip[player.index] : null;
+
+  /// True when word (step) [step] has clips, so the avatar really signs it.
+  bool isSigned(int step) => _signedSteps.contains(step);
+
+  /// True when these words have something to sign again.
+  bool get canReplay => _stepOfClip.isNotEmpty;
 
   bool get slow => player.speed < 1;
   void toggleSlow() => player.speed = slow ? 1 : 0.5;
@@ -60,6 +67,7 @@ class Signer extends ChangeNotifier {
   void _start() {
     final plan = _library.plan(_steps);
     _stepOfClip = [for (final (_, step) in plan) step];
+    _signedSteps = _stepOfClip.toSet();
     if (plan.isNotEmpty) {
       player.play([for (final (clip, _) in plan) clip]);
     } else if (player.playing) {

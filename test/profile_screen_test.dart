@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
-import 'package:signsuara_app/app/font_licences.dart';
+import 'package:signsuara_app/app/licences.dart';
 import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/screens/profile_screen.dart';
 import 'package:signsuara_app/speech/sign_words.dart';
@@ -173,12 +173,13 @@ void main() {
     expect(find.text('View licenses'), findsOneWidget);
   });
 
-  test('the bundled fonts bring their licence text into the app', () async {
+  test("the licences page gets the fonts' licence texts and the signer character's credit", () async {
     TestWidgetsFlutterBinding.ensureInitialized();
-    final entries = await fontLicences().toList();
-    expect([for (final e in entries) ...e.packages], ['Sora font', 'Plus Jakarta Sans font']);
-    for (final e in entries) {
+    final entries = await appLicences().toList();
+    expect([for (final e in entries) ...e.packages], ['Sora font', 'Plus Jakarta Sans font', 'BIM signer character']);
+    for (final e in entries.take(2)) {
       expect(e.paragraphs.map((p) => p.text).join(' '), contains('SIL OPEN FONT LICENSE'));
     }
+    expect(entries.last.paragraphs.single.text, contains('水銀メイド'), reason: 'its licence requires credit');
   });
 }

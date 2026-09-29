@@ -1,9 +1,12 @@
+import 'dart:ui' show SemanticsFlag;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
 import 'package:signsuara_app/screens/hearing_screen.dart';
+import 'package:signsuara_app/signer/sign_clips.dart';
 import 'package:signsuara_app/signer/sign_player_view.dart';
 import 'package:signsuara_app/signer/signer.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
@@ -16,7 +19,8 @@ Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer}) async {
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
   }
-  final services = AppServices(signer: signer);
+  // Without test clips: a signer with none, whatever clips the app itself ships.
+  final services = AppServices(signer: signer ?? Signer(library: Future.value(const SignClipLibrary({}))));
   addTearDown(services.dispose);
   await tester.pumpWidget(MaterialApp(theme: buildAppTheme(), home: Scaffold(body: HearingScreen(services: services))));
   return services;
@@ -121,6 +125,24 @@ void main() {
     await tester.tap(find.bySemanticsLabel('Slower signing'));
     await tester.pump();
     expect(services.signer.slow, isTrue);
+    semantics.dispose();
+  });
+
+  testWidgets('words without a sign clip yet are grey, and there is nothing to sign again', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final image = (await tester.runAsync(() => createTestImage(width: 4, height: 4, cache: false)))!;
+    final services = await _pumpScreen(tester, signer: fakeSigner(image, {'rest'}));
+    await tester.pump();
+    expect(find.byType(SignPlayerView), findsOneWidget, reason: 'the avatar stands ready');
+
+    await tester.tap(find.text('Terima kasih')); // no clip for it yet
+    await tester.pump();
+    expect(services.signer.signing, isFalse);
+    expect(services.signer.isSigned(0), isFalse);
+    expect(find.text('Grey words have no sign clip yet.'), findsOneWidget);
+    final replay = tester.getSemantics(find.bySemanticsLabel('Sign it again'));
+    expect(replay.hasFlag(SemanticsFlag.hasEnabledState) && !replay.hasFlag(SemanticsFlag.isEnabled), isTrue,
+        reason: 'shown as disabled');
     semantics.dispose();
   });
 

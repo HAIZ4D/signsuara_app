@@ -77,6 +77,15 @@ void main() {
     expect([signer.signing, signer.currentStep], [false, null]);
   });
 
+  test('knows which words are really signed, and whether there is anything to sign again', () async {
+    final signer = fakeSigner(image, {'terima_kasih'});
+    await pumpEventQueue();
+    signer.show('Terima kasih Zad');
+    expect([signer.isSigned(0), signer.isSigned(1), signer.canReplay], [true, false, true]);
+    signer.show('Zad');
+    expect([signer.isSigned(0), signer.canReplay], [false, false]);
+  });
+
   test('the same words again do not restart it; signAgain and replay do', () async {
     final signer = fakeSigner(image, {'ya'});
     await pumpEventQueue();

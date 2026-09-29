@@ -199,9 +199,12 @@ class _Stage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(28.5),
                   child: Container(
                     decoration: const BoxDecoration(gradient: AppGradients.stage),
-                    foregroundDecoration: const BoxDecoration(gradient: AppGradients.stageGlow),
                     child: Stack(
                       children: [
+                        // The glow sits behind everything, so the signer's colours stay true.
+                        const Positioned.fill(
+                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageGlow)),
+                        ),
                         const Positioned(
                           top: 18,
                           left: 0,
@@ -214,7 +217,7 @@ class _Stage extends StatelessWidget {
                               padding: const EdgeInsets.fromLTRB(16, 46, 16, 54),
                               child: Column(
                                 children: [
-                                  Expanded(child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
+                                  Expanded(flex: 3, child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
                                   const SizedBox(height: AppSpace.s),
                                   Flexible(
                                     // on a short screen the words give way (they never push out of the stage)
@@ -222,7 +225,13 @@ class _Stage extends StatelessWidget {
                                         ? Text('Tap the mic and talk. The signer signs it.',
                                             textAlign: TextAlign.center,
                                             style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 14))
-                                        : _SignedSentence(text: text, steps: signs, current: current, large: large),
+                                        : _SignedSentence(
+                                            text: text,
+                                            steps: signs,
+                                            current: current,
+                                            signed: ours ? signer.isSigned : (_) => false,
+                                            large: large,
+                                          ),
                                   ),
                                 ],
                               ),
@@ -282,7 +291,7 @@ class _Stage extends StatelessWidget {
                               _StageButton(
                                 icon: Icons.replay_rounded,
                                 label: 'Sign it again',
-                                onTap: signs.isEmpty ? null : signer.replay,
+                                onTap: ours && signer.canReplay ? signer.replay : null,
                               ),
                               const SizedBox(width: 6),
                               _StageButton(
@@ -333,23 +342,35 @@ class _Stage extends StatelessWidget {
 }
 
 /// The words under the signer; the word being signed now is highlighted (design: .hm-chunk.active).
+/// Words the avatar can't sign yet (no clip) are grey, with a note saying so.
 class _SignedSentence extends StatelessWidget {
-  const _SignedSentence({required this.text, required this.steps, required this.current, required this.large});
+  const _SignedSentence({
+    required this.text,
+    required this.steps,
+    required this.current,
+    required this.signed,
+    required this.large,
+  });
 
   final String text;
   final List<SignStep> steps;
   final int? current;
+  final bool Function(int step) signed;
   final bool large;
 
   @override
   Widget build(BuildContext context) {
     final spans = <InlineSpan>[];
     var at = 0;
+    var unsigned = false;
     for (final (i, step) in steps.indexed) {
       if (step.start > at) spans.add(TextSpan(text: text.substring(at, step.start)));
+      if (!signed(i)) unsigned = true;
       spans.add(TextSpan(
         text: text.substring(step.start, step.end),
-        style: i == current ? const TextStyle(color: AppColors.onYellow, backgroundColor: AppColors.yellow) : null,
+        style: i == current
+            ? const TextStyle(color: AppColors.onYellow, backgroundColor: AppColors.yellow)
+            : (signed(i) ? null : const TextStyle(color: AppColors.onDarkFaint)),
       ));
       at = step.end;
     }
@@ -358,11 +379,25 @@ class _SignedSentence extends StatelessWidget {
       liveRegion: true,
       label: text,
       excludeSemantics: true,
-      child: Text.rich(
-        TextSpan(style: AppText.heroTitle.copyWith(fontSize: large ? 26 : 20, height: 1.35), children: spans),
-        textAlign: TextAlign.center,
-        maxLines: 4,
-        overflow: TextOverflow.ellipsis,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text.rich(
+              TextSpan(style: AppText.heroTitle.copyWith(fontSize: large ? 26 : 20, height: 1.35), children: spans),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (unsigned)
+            Flexible(
+              child: Text('Grey words have no sign clip yet.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.small.copyWith(color: AppColors.onDarkFaint, fontSize: 12)),
+            ),
+        ],
       ),
     );
   }

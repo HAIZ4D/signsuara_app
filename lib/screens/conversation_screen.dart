@@ -487,9 +487,10 @@ class _SigningStage extends StatelessWidget {
       child: Container(
         height: 190,
         decoration: const BoxDecoration(gradient: AppGradients.stage),
-        foregroundDecoration: const BoxDecoration(gradient: AppGradients.stageGlow),
         child: Stack(
           children: [
+            // The glow sits behind the signer, so its colours stay true.
+            const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageGlow))),
             Positioned.fill(
               top: 8,
               bottom: 40,
