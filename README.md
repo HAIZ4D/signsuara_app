@@ -180,8 +180,13 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   `saya`, `nama`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
   both hands). So every Hearing quick reply (Terima kasih, Ya, Tidak, Saya, Nama) is signed.
   SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
-  middle of the chest, one small light touch; NAMA = two H hands at the lower chest, palms in, the
-  right hand taps twice across the left hand's fingers (an X). Clips are 560 px; the camera frames the upper
+  middle of the chest, one small light touch; NAMA = two H hands (index and middle finger straight
+  and together, ring and little finger curled, thumb folded across them) in front of the lower
+  chest, palms facing the body and a little down; the left hand stays still, the right hand starts
+  9 cm above, taps twice across the middle of the left fingers (a small X; right fingers tilted
+  ~27°), lifting 3.5 cm between the taps, then moves away before both hands go back to rest.
+  `hands_clash()` (in `sign_pose.py`) counts skin triangles of one hand that pass through the
+  other: 0 on every NAMA frame. Clips are 560 px; the camera frames the upper
   body from just above the head to just below the resting hands.
 - **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
   note; the avatar signs the rest.

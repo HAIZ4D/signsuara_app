@@ -204,8 +204,8 @@ def handshape(side, name, with_thumb=True):
         return place_thumb(side, base['Ring'] + palm_n * 0.016, bend_range=range(0, 75, 15))
     if name == 'index':  # thumb holds the curled middle finger down
         return place_thumb(side, mid['Middle'] + palm_n * 0.02, bend_range=range(0, 75, 15))
-    if name == 'H':      # thumb over the curled ring finger
-        return place_thumb(side, mid['Ring'] + palm_n * 0.02, bend_range=range(0, 75, 15))
+    if name == 'H':      # thumb folded across the curled ring and little fingers
+        return place_thumb(side, (mid['Ring'] + mid['Little']) / 2 + palm_n * 0.02, bend_range=range(0, 75, 15))
     if name == 'Y':      # thumb spread out sideways
         return place_thumb(side, base['Index'] + radial * 0.07)
     return 0.0
@@ -278,6 +278,40 @@ def ik_frames(side, shape, keys, start):
             prev = share_twist(side, prev=prev)
             out.append((f, snapshot()))
     return out
+
+
+def hands_clash(body='Body'):
+    """How many triangles of the right hand's skin pass through the left hand's skin, with the
+    character as posed now (0 = no fingers clipping through each other). A vertex belongs to a
+    hand when at least half of its weight is on that hand's bones."""
+    from mathutils.bvhtree import BVHTree
+    obj = bpy.data.objects[body]
+    names = {g.index: g.name for g in obj.vertex_groups}
+    parts = ('Hand', 'Thumb', 'Index', 'Middle', 'Ring', 'Little')
+
+    def hand_of(v):
+        w = {'L': 0.0, 'R': 0.0}
+        for g in v.groups:
+            n = names.get(g.group, '')
+            if n[:8] in ('J_Bip_L_', 'J_Bip_R_') and n[8:].startswith(parts):
+                w[n[6]] += g.weight
+        return 'L' if w['L'] >= 0.5 else 'R' if w['R'] >= 0.5 else None
+
+    hands = [hand_of(v) for v in obj.data.vertices]
+    bpy.context.view_layer.update()
+    evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    mesh = evaluated.to_mesh()
+    try:
+        verts = [v.co.copy() for v in mesh.vertices]
+        polys = {'L': [], 'R': []}
+        for p in mesh.polygons:
+            owner = {hands[i] for i in p.vertices}
+            if len(owner) == 1 and None not in owner:
+                polys[owner.pop()].append(tuple(p.vertices))
+        trees = [BVHTree.FromPolygons(verts, polys[s]) for s in 'RL']
+        return len(trees[0].overlap(trees[1]))
+    finally:
+        evaluated.to_mesh_clear()
 
 
 SLIM_SLEEVES = 'SignSuara slim sleeves'
