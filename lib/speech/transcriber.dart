@@ -56,13 +56,16 @@ class Transcriber extends ChangeNotifier {
 
   void _onError(SpeechRecognitionError error) {
     listening = false;
-    problem = sttErrorText(error.errorMsg);
+    problem = sttErrorText(error.errorMsg) ?? problem;
     notifyListeners();
   }
 }
 
-/// Plain-English text for Android's speech recognition error codes.
-String sttErrorText(String code) => switch (code) {
+/// Plain-English text for Android's speech recognition error codes, or null when the code is no
+/// real failure: many phones report error_client whenever a listen closes, even after the words
+/// came through fine (README "Speech").
+String? sttErrorText(String code) => switch (code) {
+      'error_client' => null,
       'error_no_match' || 'error_speech_timeout' => "Didn't catch that. Tap the mic and try again.",
       'error_network' || 'error_network_timeout' || 'error_server' || 'error_server_disconnected' =>
         'Speech recognition needs internet. Check the connection and try again.',

@@ -93,7 +93,9 @@ Implemented in `lib/ml/gesture_classifier.dart`:
 The mapping lives in one place, `kSignWords` in `lib/speech/sign_words.dart`; a label missing
 from it is spoken as-is. The phone's text-to-speech engine is used; for Malay, "Speech Services by
 Google" is recommended. Speech-to-text uses Google's recogniser and normally needs internet. The
-phone stays silent while it is listening, so it never transcribes its own voice.
+phone stays silent while it is listening, so it never transcribes its own voice. Recogniser errors
+are shown in plain words, except "error_client": many phones report it whenever a listen closes,
+even when the words came through fine, so it is not shown.
 
 ## Custom gestures
 

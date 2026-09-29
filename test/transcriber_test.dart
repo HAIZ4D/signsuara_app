@@ -11,6 +11,10 @@ void main() {
     expect(sttErrorText('error_language_unavailable'), contains('language is not available'));
   });
 
+  test('error_client gives no message: phones send it when a listen closes, even after a good result', () {
+    expect(sttErrorText('error_client'), isNull);
+  });
+
   test('an unknown error still gives a message with its code', () {
     expect(sttErrorText('error_unknown (99)'), contains('error_unknown (99)'));
   });
