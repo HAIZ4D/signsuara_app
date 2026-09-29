@@ -215,26 +215,33 @@ class _Stage extends StatelessWidget {
                         if (avatar)
                           Positioned.fill(
                             child: Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 46, 16, 54),
-                              child: Column(
-                                children: [
-                                  Expanded(flex: 3, child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
-                                  const SizedBox(height: AppSpace.s),
-                                  Flexible(
-                                    // on a short screen the words give way (they never push out of the stage)
-                                    child: empty
-                                        ? Text('Tap the mic and talk. The signer signs it.',
-                                            textAlign: TextAlign.center,
-                                            style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 14))
-                                        : _SignedSentence(
-                                            text: text,
-                                            steps: signs,
-                                            current: current,
-                                            signed: ours ? signer.isSigned : (_) => false,
-                                            large: large,
-                                          ),
-                                  ),
-                                ],
+                              // the top chip and buttons sit in the empty corners beside the head
+                              padding: const EdgeInsets.fromLTRB(12, 30, 12, 54),
+                              child: LayoutBuilder(
+                                builder: (context, box) => Column(
+                                  children: [
+                                    // the signer gets all the room the words don't need
+                                    Expanded(child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
+                                    const SizedBox(height: AppSpace.s),
+                                    ConstrainedBox(
+                                      // long words take at most a third; on a short screen they give way
+                                      constraints: BoxConstraints(maxHeight: box.maxHeight / 3),
+                                      child: empty
+                                          ? Text('Tap the mic and talk. The signer signs it.',
+                                              textAlign: TextAlign.center,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 14))
+                                          : _SignedSentence(
+                                              text: text,
+                                              steps: signs,
+                                              current: current,
+                                              signed: ours ? signer.isSigned : (_) => false,
+                                              large: large,
+                                            ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           )
@@ -550,7 +557,7 @@ class _EarlierCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 112,
+      height: 88, // kept low so the signer's stage gets the height
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       decoration: BoxDecoration(
         color: AppColors.glass,
@@ -572,10 +579,14 @@ class _EarlierCard extends StatelessWidget {
           const SizedBox(height: 6),
           Expanded(
             child: lines.isEmpty
-                ? Text(
-                    'Earlier sentences are kept here. Quick replies below work without speaking.',
-                    style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 13),
-                  )
+                ? (listening // the wave below says it is listening; the hint would not fit next to it
+                    ? const SizedBox.shrink()
+                    : Text(
+                        'Earlier sentences are kept here. Quick replies below work without speaking.',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 13),
+                      ))
                 : ListView(
                     reverse: true,
                     padding: EdgeInsets.zero,
