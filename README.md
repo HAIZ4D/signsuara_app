@@ -161,14 +161,19 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   Fingerspelling: `sign:spell_in` raises the right hand to the shoulder, letters
   (`sign:letter_a`, …) start and end there with a relaxed hand, and `sign:spell_out` brings it back
   down; the app wraps each run of spelled words in spell_in … spell_out, so the hand does not drop
-  between letters. posing helpers (`tools/blender/sign_pose.py`) pose the
-  character by joint angles and key every frame in between (shortest turns, eased).
+  between letters. The posing helpers (`tools/blender/sign_pose.py`) place a hand by its wrist
+  position and direction (the arm is worked out), can move a fingertip onto a touch point (SAYA:
+  the index on the chest), find the thumb for a handshape by a quick search, and key every frame
+  in between (shortest turns, eased); moves between two signing poses are placed frame by frame so
+  the elbow does not swing out. An action `face:<id>` on the face's shape keys gives a sign a
+  facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face.
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
      (560 px). The app picks the new clips up by itself.
-- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`
-  (posed from BIM Sign Bank pictures, right hand). Clips are 560 px; the camera frames the upper
+- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
+  `saya`, `nama`, `sila`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
+  both hands). So every Hearing quick reply (Terima kasih, Ya, Tidak, Sila, Saya, Nama) is signed. Clips are 560 px; the camera frames the upper
   body from just above the head to just below the resting hands.
 - **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
   note; the avatar signs the rest.

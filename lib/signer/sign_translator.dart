@@ -31,7 +31,7 @@ class SignStep {
 
 /// Speech → a sequence of BIM signs, word by word (README "Signer"):
 /// 1. phrases in the dictionary first, the longest one wins ("terima kasih" is one sign);
-/// 2. then single words, also without a spoken -lah, -kah, -nya or -pun ending ("tunggulah");
+/// 2. then single words, also without a spoken -lah, -kah, -nya or -pun ending ("namanya");
 /// 3. anything else is fingerspelled (names, unknown words), digits with number signs.
 /// It keeps the spoken word order: signed Malay or English, not full BIM grammar.
 class SignTranslator {

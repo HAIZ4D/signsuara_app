@@ -21,16 +21,20 @@ def armature():
     return bpy.data.objects[ARMATURE]
 
 
-def turn(bone, *steps):
-    """Sets [bone]'s rotation: [steps] = (axis, degrees) in T-pose axes, applied in order."""
-    arm = armature()
+def _rotation(bone, steps):
+    """The bone's own rotation for [steps] = (axis, degrees) in T-pose axes, applied in order."""
     total = Quaternion()
     for axis, deg in steps:
         total = Quaternion(AXIS[axis], math.radians(deg)) @ total
-    rest = arm.data.bones[bone].matrix_local.to_quaternion()
-    pose = arm.pose.bones[bone]
+    rest = armature().data.bones[bone].matrix_local.to_quaternion()
+    return rest.inverted() @ total @ rest
+
+
+def turn(bone, *steps):
+    """Sets [bone]'s rotation: [steps] = (axis, degrees) in T-pose axes, applied in order."""
+    pose = armature().pose.bones[bone]
     pose.rotation_mode = 'QUATERNION'
-    pose.rotation_quaternion = rest.inverted() @ total @ rest
+    pose.rotation_quaternion = _rotation(bone, steps)
 
 
 def _rotate_world(bone, rotation):
@@ -113,20 +117,199 @@ def curl(side, finger, mcp, pip, dip):
         turn(f'J_Bip_{side}_{finger}{joint}', ('y', sign * deg))
 
 
+def _thumb_steps(side, joints):
+    mirror = {'x': 1, 'y': -1, 'z': -1}
+    return [[(axis, mirror[axis] * deg) for axis, deg in steps] if side == 'R' else steps for steps in joints]
+
+
 def thumb(side, *joints):
     """Poses the thumb: [joints] = for Thumb1..3 a list of (axis, degrees) in T-pose axes, with the
     left hand's signs (they are mirrored for the right hand)."""
-    mirror = {'x': 1, 'y': -1, 'z': -1}
-    for n, steps in enumerate(joints, start=1):
-        if side == 'R':
-            steps = [(axis, mirror[axis] * deg) for axis, deg in steps]
+    for n, steps in enumerate(_thumb_steps(side, joints), start=1):
         turn(f'J_Bip_{side}_Thumb{n}', *steps)
+
+
+def _thumb_tip(side, joints):
+    """Where the thumb tip would be (world) with [joints], worked out bone by bone from the hand as
+    it is posed now, without updating the scene (which would re-shape the whole character)."""
+    arm = armature()
+    bones = arm.data.bones
+    parent = bones[f'J_Bip_{side}_Hand']
+    m = arm.pose.bones[parent.name].matrix.copy()
+    for n, steps in enumerate(_thumb_steps(side, joints), start=1):
+        bone = bones[f'J_Bip_{side}_Thumb{n}']
+        m = m @ (parent.matrix_local.inverted() @ bone.matrix_local) @ _rotation(bone.name, steps).to_matrix().to_4x4()
+        parent = bone
+    return arm.matrix_world @ (m @ Vector((0, parent.length, 0)))
+
+
+def place_thumb(side, target, bend_range=(0,)):
+    """Finds the thumb pose whose tip lands closest to the world point [target]: a coarse search
+    over the thumb's two base angles (and, optionally, how much its joints bend), then a fine one
+    around the best. Returns the miss in metres."""
+    target = Vector(target)
+    bpy.context.view_layer.update()  # the hand as posed now
+
+    def miss(z, x, bend):
+        return (_thumb_tip(side, ([('z', z), ('x', x)], [('z', bend)], [('z', bend)])) - target).length
+
+    best = min((miss(z, x, b), z, x, b) for b in bend_range for z in range(-10, 100, 10) for x in range(-60, 90, 10))
+    _, z0, x0, b0 = best
+    fine = [b0] if len(bend_range) == 1 else [b0 - 7.5, b0, b0 + 7.5]
+    best = min(best, *((miss(z, x, b), z, x, b) for b in fine
+                        for z in (z0 - 5, z0 - 2.5, z0 + 2.5, z0 + 5) for x in (x0 - 5, x0 - 2.5, x0, x0 + 2.5, x0 + 5)))
+    d, z, x, bend = best
+    thumb(side, [('z', z), ('x', x)], [('z', bend)], [('z', bend)])
+    return d
+
+
+def handshape(side, name, with_thumb=True):
+    """Sets the fingers (and thumb) of hand [side] to a handshape, keeping the hand's direction:
+    'relaxed', 'fist' (A: thumb up along the index), 'flat' (fingers together, thumb along the
+    index), 'B' (flat, thumb across the palm), 'index' (index finger out), 'Y' (thumb and little
+    finger out), 'H' (index and middle finger out together)."""
+    straight, bent = (0, 0, 0), (88, 100, 60)
+    fingers = {
+        'relaxed': dict.fromkeys(FINGERS, (8, 10, 6)),
+        'fist': dict.fromkeys(FINGERS, bent),
+        'flat': dict.fromkeys(FINGERS, straight),
+        'B': dict.fromkeys(FINGERS, straight),
+        'index': {'Index': straight, 'Middle': bent, 'Ring': bent, 'Little': bent},
+        'Y': {'Index': bent, 'Middle': bent, 'Ring': bent, 'Little': straight},
+        'H': {'Index': straight, 'Middle': straight, 'Ring': bent, 'Little': bent},
+    }[name]
+    together = name in ('flat', 'B', 'H')
+    spread = {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5} if together else dict.fromkeys(FINGERS, 0)
+    sign = 1 if side == 'L' else -1
+    for f, (mcp, pip, dip) in fingers.items():
+        turn(f'J_Bip_{side}_{f}1', ('z', spread[f] if side == 'R' else -spread[f]), ('y', sign * mcp))
+        turn(f'J_Bip_{side}_{f}2', ('y', sign * pip))
+        turn(f'J_Bip_{side}_{f}3', ('y', sign * dip))
+    if name == 'relaxed':
+        thumb(side, [('z', 10)], [], [])
+        return 0.0
+    if not with_thumb:  # fingers only (fast), e.g. while the arm is still being placed
+        return 0.0
+    base = {f: Vector(point(f'J_Bip_{side}_{f}1')) for f in FINGERS}
+    mid = {f: Vector(point(f'J_Bip_{side}_{f}2')) for f in FINGERS}
+    radial = (base['Index'] - base['Middle']).normalized()   # towards the thumb side
+    palm_n = (base['Middle'] - Vector(point(f'J_Bip_{side}_Hand'))).cross(radial).normalized()
+    if side == 'R':
+        palm_n = -palm_n
+    if name == 'fist':
+        return place_thumb(side, base['Index'] + radial * 0.012 + (base['Index'] - Vector(point(f'J_Bip_{side}_Hand'))).normalized() * 0.035)
+    if name == 'flat':
+        return place_thumb(side, mid['Index'] + radial * 0.012)
+    if name == 'B':
+        return place_thumb(side, base['Ring'] + palm_n * 0.016, bend_range=range(0, 75, 15))
+    if name == 'index':  # thumb holds the curled middle finger down
+        return place_thumb(side, mid['Middle'] + palm_n * 0.02, bend_range=range(0, 75, 15))
+    if name == 'H':      # thumb over the curled ring finger
+        return place_thumb(side, mid['Ring'] + palm_n * 0.02, bend_range=range(0, 75, 15))
+    if name == 'Y':      # thumb spread out sideways
+        return place_thumb(side, base['Index'] + radial * 0.07)
+    return 0.0
 
 
 def point(bone, end='head'):
     bpy.context.view_layer.update()
     arm = armature()
     return [round(v, 3) for v in (arm.matrix_world @ getattr(arm.pose.bones[bone], end))]
+
+
+def place(side, shape, wrist, fingers, palm, hint=(0, 0.3, -1), touch=None, rounds=6):
+    """Arm [side] reaches to [wrist], the hand faces [fingers] / [palm], in handshape [shape].
+    With touch=(function giving a point of the hand, target) the wrist is moved until that point
+    is at the target (a fingertip on the chest). Returns (touch miss, thumb miss) in metres."""
+    w = Vector(wrist)
+    for _ in range(rounds if touch else 1):
+        reach(side, w, hint)
+        hand_facing(side, fingers, palm)
+        handshape(side, shape, with_thumb=False)
+        if not touch:
+            break
+        w += Vector(touch[1]) - touch[0]()
+    miss = (touch[0]() - Vector(touch[1])).length if touch else 0.0
+    return miss, handshape(side, shape)
+
+
+def share_twist(side, part=0.5, prev=None):
+    """Moves [part] of the hand's twist into the forearm (there are no twist bones), so the wrist
+    does not wring. [prev] = the twist of the frame before (radians): the nearest equal twist is
+    used, so it never turns round suddenly. Returns the twist."""
+    bpy.context.view_layer.update()
+    arm = armature()
+    hand, lower = arm.pose.bones[f'J_Bip_{side}_Hand'], arm.pose.bones[f'J_Bip_{side}_LowerArm']
+    q = hand.rotation_quaternion
+    angle = (2 * math.atan2(q.y, q.w) + math.pi) % (2 * math.pi) - math.pi
+    if prev is not None:
+        angle = prev + ((angle - prev + math.pi) % (2 * math.pi) - math.pi)
+    keep = hand.matrix.copy()
+    lower.rotation_quaternion = lower.rotation_quaternion @ Quaternion((0, 1, 0), angle * part)
+    bpy.context.view_layer.update()
+    hand.matrix = keep
+    bpy.context.view_layer.update()
+    return angle
+
+
+def _hand_frame(fingers, palm):
+    f = Vector(fingers).normalized()
+    p = (Vector(palm) - Vector(palm).project(f)).normalized()
+    return Matrix((f, p, f.cross(p))).transposed().to_quaternion()
+
+
+def ik_frames(side, shape, keys, start):
+    """Every frame from the first to the last of [keys] = [(frame, (wrist, fingers, palm, hint))],
+    each placed from snapshot [start]: the wrist moves smoothly, the hand turns the shortest way and
+    the arm follows. For moves between two signing poses: blending the joint rotations one by one
+    (make_action) can swing the elbow out when the forearm twist changes a lot."""
+    out, prev = [], None
+    for n, ((fa, a), (fb, b)) in enumerate(zip(keys, keys[1:])):
+        qa, qb = _hand_frame(a[1], a[2]), _hand_frame(b[1], b[2])
+        if qa.dot(qb) < 0:
+            qb = -qb
+        for f in range(fa if n == 0 else fa + 1, fb + 1):
+            t = (f - fa) / (fb - fa)
+            t = t * t * (3 - 2 * t)
+            m = qa.slerp(qb, t).to_matrix()
+            restore(start)
+            place(side, shape, Vector(a[0]).lerp(Vector(b[0]), t), m.col[0], m.col[1],
+                  hint=Vector(a[3]).lerp(Vector(b[3]), t))
+            prev = share_twist(side, prev=prev)
+            out.append((f, snapshot()))
+    return out
+
+
+FACE = 'Face'
+
+
+def face_keys():
+    return bpy.data.objects[FACE].data.shape_keys
+
+
+def make_face_action(name, keys):
+    """Creates (or replaces) face action [name] (e.g. 'face:terima_kasih'): [keys] = [(frame,
+    {shape key: value}), ...]. Shape keys not named are 0 (neutral) at every key."""
+    key = face_keys()
+    old = bpy.data.actions.get(name)
+    if old:
+        bpy.data.actions.remove(old)
+    action = bpy.data.actions.new(name)
+    action.use_fake_user = True
+    key.animation_data_create()
+    key.animation_data.action = action
+    shapes = sorted({s for _, values in keys for s in values})
+    for frame, values in keys:
+        for s in shapes:
+            block = key.key_blocks[s]
+            block.value = values.get(s, 0.0)
+            block.keyframe_insert('value', frame=frame)
+    action.use_frame_range = True
+    action.frame_start, action.frame_end = keys[0][0], keys[-1][0]
+    key.animation_data.action = None
+    for s in shapes:
+        key.key_blocks[s].value = 0.0
+    return action
 
 
 def use_action(name):

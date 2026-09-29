@@ -24,10 +24,12 @@ class HearingScreen extends StatefulWidget {
   /// Quick replies the hearing person can tap instead of speaking: (Malay, English).
   /// Every word in them must have a sign (test/sign_translator_test.dart checks it).
   static const quickReplies = [
-    ('Sila tunggu', 'Please wait'),
     ('Terima kasih', 'Thank you'),
     ('Ya', 'Yes'),
     ('Tidak', 'No'),
+    ('Sila', 'Please'),
+    ('Saya', 'Me'),
+    ('Nama', 'Name'),
   ];
 
   @override

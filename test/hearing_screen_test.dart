@@ -46,7 +46,7 @@ void main() {
     expect(find.text('HEARING MODE'), findsOneWidget);
     expect(find.textContaining('Your words show up here'), findsOneWidget);
     expect(find.text('READY'), findsOneWidget);
-    for (final q in ['Sila tunggu', 'Terima kasih', 'Ya', 'Tidak']) {
+    for (final q in ['Terima kasih', 'Ya', 'Tidak']) { // the first ones (the row scrolls sideways)
       expect(find.text(q), findsOneWidget, reason: 'Malay quick reply $q');
     }
     expect(find.bySemanticsLabel('Tap to speak'), findsOneWidget);
@@ -152,6 +152,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('English → text'), findsOneWidget);
-    expect(find.text('Please wait'), findsOneWidget);
+    expect(find.text('Thank you'), findsOneWidget);
   });
 }

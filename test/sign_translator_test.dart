@@ -31,12 +31,13 @@ void main() {
   });
 
   test('English speech uses the same signs', () {
-    expect(labels('Thank you, please wait.'), ['TERIMA KASIH', 'SILA', 'TUNGGU']);
+    expect(labels('Thank you, please.'), ['TERIMA KASIH', 'SILA']);
+    expect(labels('Please wait'), ['SILA', 'W·A·I·T'], reason: 'no sign for "wait": spelled');
     expect(labels('I understand'), ['SAYA', 'FAHAM']);
   });
 
   test('spoken endings (-lah, -kah, -nya, -pun) are dropped only when that gives a known word', () {
-    expect(labels('Tunggulah'), ['TUNGGU']);
+    expect(labels('Namanya'), ['NAMA']);
     expect(labels('Bolehkah?'), ['BOLEH']);
     expect(labels('sekolah'), ['S·E·K·O·L·A·H'], reason: '"seko" is not a word');
   });

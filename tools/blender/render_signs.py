@@ -15,6 +15,7 @@ import bpy
 
 PROJECT = os.environ.get('SIGNSUARA_PROJECT', r'C:\FlutterProject\signsuara_app')
 ARMATURE = 'Armature'
+FACE = 'Face'  # its shape keys: an action "face:<id>" gives sign <id> a facial expression
 
 
 def render_signs(only=None):
@@ -22,6 +23,8 @@ def render_signs(only=None):
     scene = bpy.context.scene
     armature = bpy.data.objects[ARMATURE]
     armature.animation_data_create()
+    face = bpy.data.objects[FACE].data.shape_keys
+    face.animation_data_create()
     before = (armature.animation_data.action, scene.frame_start, scene.frame_end, scene.render.filepath)
     done = []
     try:
@@ -32,6 +35,10 @@ def render_signs(only=None):
             if only and sign not in only:
                 continue
             armature.animation_data.action = action
+            face.animation_data.action = bpy.data.actions.get(f'face:{sign}')
+            if face.animation_data.action is None:  # no expression for this sign: neutral face
+                for block in face.key_blocks[1:]:
+                    block.value = 0.0
             first, last = (int(f) for f in action.frame_range)
             folder = os.path.join(PROJECT, 'character', 'renders', sign)
             os.makedirs(folder, exist_ok=True)
@@ -45,6 +52,7 @@ def render_signs(only=None):
             done.append((sign, last - first + 1))
     finally:
         armature.animation_data.action = before[0]
+        face.animation_data.action = None
         scene.frame_start, scene.frame_end, scene.render.filepath = before[1:]
     return done
 

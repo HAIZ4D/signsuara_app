@@ -21,7 +21,6 @@ const kBimSigns = <BimSign>[
   BimSign('terima_kasih', malay: ['terima kasih'], english: ['thank you', 'thanks']),
   // Quick replies in Hearing mode
   BimSign('sila', malay: ['sila'], english: ['please']),
-  BimSign('tunggu', malay: ['tunggu'], english: ['wait']),
   BimSign('ya', malay: ['ya'], english: ['yes']),
   BimSign('tidak', malay: ['tidak', 'tak'], english: ['no', 'not']),
   // Everyday words
