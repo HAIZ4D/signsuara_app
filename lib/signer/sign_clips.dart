@@ -30,13 +30,34 @@ class SignClipLibrary {
 
   bool get isEmpty => ids.isEmpty;
 
+  /// The hand rising to where letters are signed, and going back down to the rest pose.
+  static const spellIn = 'spell_in', spellOut = 'spell_out';
+
   /// What to play for [steps]: each clip with the number of the step (word) it belongs to.
   /// A sign without a clip yet is fingerspelled when every letter has a clip; a word that can
   /// be neither signed nor fully spelled is left out (half a word would only confuse).
-  List<(String clip, int step)> plan(List<SignStep> steps) => [
-        for (final (i, step) in steps.indexed)
-          for (final clip in _clipsFor(step)) (clip, i),
-      ];
+  /// Letters stay up at the shoulder: a run of spelled words is wrapped in [spellIn] ... [spellOut]
+  /// (when those clips exist), instead of the hand going down between letters.
+  List<(String clip, int step)> plan(List<SignStep> steps) {
+    final wrap = ids.contains(spellIn) && ids.contains(spellOut);
+    final out = <(String, int)>[];
+    var up = false; // the hand is at the letters' place
+    var last = 0;
+    for (final (i, step) in steps.indexed) {
+      final clips = _clipsFor(step);
+      if (clips.isEmpty) continue;
+      final letters = clips.every(_isSpelling);
+      if (wrap && letters && !up) out.add((spellIn, i));
+      if (wrap && !letters && up) out.add((spellOut, last));
+      up = letters;
+      last = i;
+      out.addAll([for (final clip in clips) (clip, i)]);
+    }
+    if (wrap && up) out.add((spellOut, last));
+    return out;
+  }
+
+  static bool _isSpelling(String clip) => clip.startsWith('letter_') || clip.startsWith('number_');
 
   List<String> _clipsFor(SignStep step) {
     if (step.signs.every(ids.contains)) return step.signs;

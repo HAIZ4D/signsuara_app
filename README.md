@@ -158,10 +158,17 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   armature (with a manual frame range, starting and ending in the rest pose; `sign:rest` is the
   avatar standing ready, hands together in front of the waist). The scene has a front camera on
   the signing space, soft lights and a transparent background at 800 px, 24 fps.
+  Fingerspelling: `sign:spell_in` raises the right hand to the shoulder, letters
+  (`sign:letter_a`, …) start and end there with a relaxed hand, and `sign:spell_out` brings it back
+  down; the app wraps each run of spelled words in spell_in … spell_out, so the hand does not drop
+  between letters. posing helpers (`tools/blender/sign_pose.py`) pose the
+  character by joint angles and key every frame in between (shortest turns, eased).
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
      (400 px). The app picks the new clips up by itself.
+- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b` (posed from BIM Sign
+  Bank pictures, right hand).
 - **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
   note; the avatar signs the rest.
 
@@ -193,7 +200,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 152 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 153 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

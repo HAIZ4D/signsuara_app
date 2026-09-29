@@ -39,6 +39,31 @@ void main() {
       expect(const SignClipLibrary({}).plan(steps), isEmpty);
     });
 
+    test('spelled words are wrapped: the hand goes up once, spells, and comes down once', () {
+      final library = SignClipLibrary({
+        'terima_kasih', 'spell_in', 'spell_out', 'letter_a', 'letter_b', 'letter_d', 'letter_y', 'letter_z',
+      });
+      expect(library.plan(SignTranslator().translate('Terima kasih, ya Zad')), [
+        ('terima_kasih', 0),
+        ('spell_in', 1), // "ya" has no sign clip yet: spelled, and "Zad" straight after it
+        ('letter_y', 1),
+        ('letter_a', 1),
+        ('letter_z', 2),
+        ('letter_a', 2),
+        ('letter_d', 2),
+        ('spell_out', 2),
+      ]);
+      expect(library.plan(SignTranslator().translate('Baba terima kasih')), [
+        ('spell_in', 0),
+        ('letter_b', 0),
+        ('letter_a', 0),
+        ('letter_b', 0),
+        ('letter_a', 0),
+        ('spell_out', 0),
+        ('terima_kasih', 1),
+      ]);
+    });
+
     test('the clip list is read from the app assets (only .webp in assets/signs/)', () async {
       final manifest = {
         for (final path in ['assets/signs/ya.webp', 'assets/signs/README.md', 'assets/fonts/Sora-400.ttf'])
