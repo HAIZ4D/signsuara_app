@@ -58,11 +58,23 @@ void main() {
     await tester.pump();
     expect(services.log.messages.single.text, 'Terima kasih');
     expect(find.text('Terima kasih'), findsNWidgets(2)); // stage + chip
+    expect(find.text('TERIMA KASIH'), findsOneWidget, reason: 'how it will be signed');
 
     await tester.tap(find.byTooltip('Clear conversation'));
     await tester.pump();
     expect(services.log.messages, isEmpty);
     expect(find.text('READY'), findsOneWidget);
+  });
+
+  testWidgets('the stage shows how the words will be signed; a name is fingerspelled', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final services = await _pumpScreen(tester);
+    services.log.addHeard('Terima kasih Zad');
+    await tester.pump();
+    expect(find.text('TERIMA KASIH'), findsOneWidget);
+    expect(find.text('Z·A·D'), findsOneWidget);
+    expect(find.bySemanticsLabel('In signs: TERIMA KASIH, spelled Z A D'), findsOneWidget);
+    semantics.dispose();
   });
 
   testWidgets('switching language changes the quick replies', (tester) async {

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../history/conversation_log.dart';
+import '../signer/sign_translator.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/widgets/glass_chip.dart';
@@ -18,20 +19,21 @@ class HearingScreen extends StatefulWidget {
 
   final AppServices services;
 
+  /// Quick replies the hearing person can tap instead of speaking: (Malay, English).
+  /// Every word in them must have a sign (test/sign_translator_test.dart checks it).
+  static const quickReplies = [
+    ('Sila tunggu', 'Please wait'),
+    ('Terima kasih', 'Thank you'),
+    ('Ya', 'Yes'),
+    ('Tidak', 'No'),
+  ];
+
   @override
   State<HearingScreen> createState() => _HearingScreenState();
 }
 
 class _HearingScreenState extends State<HearingScreen> {
   var _large = false; // bigger text on the stage, easier to read from further away
-
-  /// Quick replies the hearing person can tap instead of speaking: (Malay, English).
-  static const _quick = [
-    ('Sila tunggu', 'Please wait'),
-    ('Terima kasih', 'Thank you'),
-    ('Ya', 'Yes'),
-    ('Tidak', 'No'),
-  ];
 
   AppServices get s => widget.services;
 
@@ -65,7 +67,12 @@ class _HearingScreenState extends State<HearingScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-                        child: _Stage(text: current, listening: listening, large: _large),
+                        child: _Stage(
+                          text: current,
+                          listening: listening,
+                          large: _large,
+                          signs: listening ? const [] : s.signTranslator.translate(current),
+                        ),
                       ),
                     ),
                     Padding(
@@ -78,7 +85,7 @@ class _HearingScreenState extends State<HearingScreen> {
                         scrollDirection: Axis.horizontal,
                         padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
                         children: [
-                          for (final (ms, en) in _quick)
+                          for (final (ms, en) in HearingScreen.quickReplies)
                             _QuickChip(
                               text: language == SpeechLanguage.malay ? ms : en,
                               onTap: () => s.log.addHeard(language == SpeechLanguage.malay ? ms : en),
@@ -148,11 +155,12 @@ class _Head extends StatelessWidget {
 
 /// Where the signer will stand one day; now: the words, big (design: .hm-stage).
 class _Stage extends StatelessWidget {
-  const _Stage({required this.text, required this.listening, required this.large});
+  const _Stage({required this.text, required this.listening, required this.large, required this.signs});
 
   final String text;
   final bool listening;
   final bool large;
+  final List<SignStep> signs; // how the words will be signed (the signer itself comes later)
 
   @override
   Widget build(BuildContext context) {
@@ -198,15 +206,24 @@ class _Stage extends StatelessWidget {
                             child: SingleChildScrollView(
                               reverse: true,
                               padding: const EdgeInsets.fromLTRB(22, 48, 22, 54),
-                              child: Semantics(
-                                liveRegion: true,
-                                child: AnimatedDefaultTextStyle(
-                                  duration: AppMotion.fast,
-                                  style: empty
-                                      ? AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 15)
-                                      : AppText.heroTitle.copyWith(fontSize: large ? 36 : 27, height: 1.3),
-                                  child: Text(shown, textAlign: TextAlign.center),
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Semantics(
+                                    liveRegion: true,
+                                    child: AnimatedDefaultTextStyle(
+                                      duration: AppMotion.fast,
+                                      style: empty
+                                          ? AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 15)
+                                          : AppText.heroTitle.copyWith(fontSize: large ? 36 : 27, height: 1.3),
+                                      child: Text(shown, textAlign: TextAlign.center),
+                                    ),
+                                  ),
+                                  if (signs.isNotEmpty) ...[
+                                    const SizedBox(height: AppSpace.l),
+                                    _SignChips(signs: signs),
+                                  ],
+                                ],
                               ),
                             ),
                           ),
@@ -257,6 +274,55 @@ class _Stage extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The words as signs (glosses): turquoise = a sign from the dictionary, outlined with "abc" =
+/// fingerspelled letter by letter (no sign for it).
+class _SignChips extends StatelessWidget {
+  const _SignChips({required this.signs});
+
+  final List<SignStep> signs;
+
+  @override
+  Widget build(BuildContext context) {
+    final summary = [for (final s in signs) s.spelled ? 'spelled ${s.label.replaceAll('·', ' ')}' : s.label];
+    return Semantics(
+      label: 'In signs: ${summary.join(', ')}',
+      excludeSemantics: true,
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final step in signs)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.chipOnStage,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(color: step.spelled ? AppColors.glassBorder : AppColors.turq),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (step.spelled) ...[
+                    const Icon(Icons.abc_rounded, size: 18, color: AppColors.onDarkFaint),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(step.label,
+                      style: AppText.eyebrow.copyWith(
+                        fontFamily: AppFonts.display,
+                        fontSize: 12,
+                        letterSpacing: 0.8,
+                        color: step.spelled ? AppColors.onDarkSoft : AppColors.turqBright,
+                      )),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

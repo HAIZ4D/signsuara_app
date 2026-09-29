@@ -65,3 +65,7 @@ key.properties
 local.properties
 google-services.json
 GoogleService-Info.plist
+
+# Downloaded 3D characters: their licences forbid sharing the model files (only rendered clips go in the app)
+character/
+*.vrm

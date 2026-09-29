@@ -116,6 +116,27 @@ other recordings.
 | Limit only | 95.7 % | 28.1 % | 27.5 % |
 | **Limit + closer than any built-in example** | **95.1 %** | **0.2 %** | **0.0 %** |
 
+## Signer (in progress)
+
+The hearing person's words will be shown by a BIM signer avatar, next to the text.
+
+- **Words → signs** (`lib/signer/sign_translator.dart`): known phrases first (the longest wins,
+  "terima kasih" is one sign), then single words (also without a spoken -lah, -kah, -nya or
+  -pun ending), and everything else is fingerspelled; digits use number signs. Malay and English
+  speech use the same signs. The Hearing stage already shows the result as sign chips
+  (outlined "abc" chips are fingerspelled).
+- **The dictionary** (`kBimSigns` in `lib/signer/bim_signs.dart`) lists meanings only: a sign
+  id and the words signed with it. Adding a sign = one line there, then its clip
+  `assets/signs/<id>.webp`. Every sign must be checked by a fluent BIM signer before its clip is
+  added. `test/sign_translator_test.dart` fails if a Hearing quick reply has a word without a
+  sign.
+- **Limitation:** the signing follows the spoken word order (signed Malay or English, word by
+  word). Full BIM grammar, facial grammar and use of space are not modelled.
+- **The avatar** is a downloaded VRoid character, animated in Blender and rendered to clips. Its
+  licence does not allow sharing the model file, so it is not in this repository
+  (`character/` is git-ignored) and the app only contains rendered clips. The author is credited
+  in the app once the clips are added.
+
 ## Measurements
 
 - **Python ↔ Dart parity**: for one real window per sign, the Dart features match Python within
@@ -137,13 +158,14 @@ other recordings.
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
 | `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Conversation, Hearing, Learn, history, Profile & settings |
 | `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
+| `lib/signer/` | words → BIM signs: the sign dictionary and the translator (the avatar comes later) |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`) |
-| `test/` | 123 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 131 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

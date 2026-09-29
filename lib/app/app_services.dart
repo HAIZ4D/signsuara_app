@@ -9,6 +9,7 @@ import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
 import '../history/conversation_history.dart';
 import '../history/conversation_log.dart';
+import '../signer/sign_translator.dart';
 import '../speech/sign_words.dart';
 import '../speech/speaker.dart';
 import '../speech/transcriber.dart';
@@ -37,6 +38,7 @@ class AppServices {
   final ConversationLog log;
   late final ConversationHistory history; // created at once: it must see the first message
   late final GestureBackup backup; // starts in start(), after the phone's gestures are loaded
+  final signTranslator = SignTranslator(); // what the hearing person said → BIM signs
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
