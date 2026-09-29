@@ -280,6 +280,48 @@ def ik_frames(side, shape, keys, start):
     return out
 
 
+SLIM_SLEEVES = 'SignSuara slim sleeves'
+
+
+def slim_sleeves(body='Body', cuffs=(('N00_007_01_Tops_01_CLOTH', 0.66), ('N00_007_02_Tops_01_CLOTH', 0.72))):
+    """Adds shape key SLIM_SLEEVES (value 1) to the character: the sleeves of the materials in
+    [cuffs] (jacket, shirt) taper towards the wrist (radius x the given factor at the cuff) and end
+    at the wrist. The model's wide cuffs hid the hand whenever the wrist bent (SAYA pointing at the
+    chest). The original mesh is untouched: set the key's value to 0 to get the old sleeves back."""
+    obj = bpy.data.objects[body]
+    me = obj.data
+    arm = armature()
+    factor = {i: k for i, m in enumerate(me.materials) for name, k in cuffs if m and m.name.startswith(name)}
+    of_vertex = {}  # vertex -> its cuff factor (the jacket's where jacket and shirt meet)
+    for p in me.polygons:
+        if p.material_index in factor:
+            for v in p.vertices:
+                of_vertex[v] = min(of_vertex.get(v, 1.0), factor[p.material_index])
+    if not me.shape_keys:
+        obj.shape_key_add(name='Basis', from_mix=False)
+    if SLIM_SLEEVES in me.shape_keys.key_blocks:
+        obj.shape_key_remove(me.shape_keys.key_blocks[SLIM_SLEEVES])
+    key = obj.shape_key_add(name=SLIM_SLEEVES, from_mix=False)
+    to_local = obj.matrix_world.inverted() @ arm.matrix_world
+    for side in 'LR':
+        elbow = to_local @ arm.data.bones[f'J_Bip_{side}_LowerArm'].head_local
+        axis = to_local @ arm.data.bones[f'J_Bip_{side}_Hand'].head_local - elbow
+        length = axis.length
+        axis.normalize()
+        for i, cuff in of_vertex.items():
+            d = me.vertices[i].co - elbow
+            s = d.dot(axis) / length                   # 0 at the elbow, 1 at the wrist
+            radial = d - axis * d.dot(axis)
+            if s < 0.15 or radial.length > 0.12:       # upper arm and body stay as they are
+                continue
+            t = min(max((s - 0.3) / 0.6, 0.0), 1.0)
+            k = 1 - (1 - cuff) * t * t * (3 - 2 * t)
+            s = s if s <= 1.0 else 1.0 + (s - 1.0) * 0.4  # the cuff ends near the wrist
+            key.data[i].co = elbow + axis * (s * length) + radial * k
+    key.value = 1.0
+    return key
+
+
 FACE = 'Face'
 
 

@@ -166,14 +166,20 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   the index on the chest), find the thumb for a handshape by a quick search, and key every frame
   in between (shortest turns, eased); moves between two signing poses are placed frame by frame so
   the elbow does not swing out. An action `face:<id>` on the face's shape keys gives a sign a
-  facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face.
+  facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face. The
+  character's very wide jacket cuffs hid the hand whenever the wrist bent (SAYA pointing at the
+  chest), so the sleeves are slimmed to end at the wrist with a shape key (`slim_sleeves()`; the
+  model's own mesh is unchanged, and its licence allows changes).
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
      (560 px). The app picks the new clips up by itself.
 - **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
   `saya`, `nama`, `sila`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
-  both hands). So every Hearing quick reply (Terima kasih, Ya, Tidak, Sila, Saya, Nama) is signed. Clips are 560 px; the camera frames the upper
+  both hands). So every Hearing quick reply (Terima kasih, Ya, Tidak, Sila, Saya, Nama) is signed.
+  SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
+  middle of the chest, one small light touch; NAMA = two H hands at the lower chest, palms in, the
+  right hand taps twice across the left hand's fingers (an X). Clips are 560 px; the camera frames the upper
   body from just above the head to just below the resting hands.
 - **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
   note; the avatar signs the rest.
