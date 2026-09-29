@@ -26,6 +26,19 @@ Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer}) async {
   return services;
 }
 
+/// The words highlighted on the stage right now (the word being signed), or '' when none is.
+String _highlighted(WidgetTester tester) {
+  for (final text in tester.widgetList<RichText>(find.byType(RichText))) {
+    String? found;
+    text.text.visitChildren((span) {
+      if (span is TextSpan && span.style?.backgroundColor == AppColors.yellow) found = span.text;
+      return found == null;
+    });
+    if (found != null) return found!;
+  }
+  return '';
+}
+
 /// The screen clock for [ms]: frames of 20 ms, like a real screen (one picture per frame at most).
 Future<void> _playFor(WidgetTester tester, int ms) async {
   for (var t = 0; t < ms; t += 20) {
@@ -45,7 +58,7 @@ void main() {
     await _pumpScreen(tester);
     expect(find.text('HEARING MODE'), findsOneWidget);
     expect(find.textContaining('Your words show up here'), findsOneWidget);
-    expect(find.text('READY'), findsOneWidget);
+    expect(find.text('READY'), findsNothing, reason: 'no status pill under the words: it was redundant');
     for (final q in ['Terima kasih', 'Ya', 'Tidak']) { // the first ones (the row scrolls sideways)
       expect(find.text(q), findsOneWidget, reason: 'Malay quick reply $q');
     }
@@ -61,7 +74,6 @@ void main() {
     await tester.pump();
     expect(find.text('How are you?'), findsOneWidget); // stage
     expect(find.text('Hello there'), findsOneWidget); // earlier card
-    expect(find.text('SAID'), findsOneWidget);
 
     Text stage() => tester.widget<Text>(find.text('How are you?'));
     final normal = DefaultTextStyle.of(tester.element(find.text('How are you?'))).style.fontSize;
@@ -83,7 +95,7 @@ void main() {
     await tester.tap(find.byTooltip('Clear conversation'));
     await tester.pump();
     expect(services.log.messages, isEmpty);
-    expect(find.text('READY'), findsOneWidget);
+    expect(find.textContaining('Your words show up here'), findsOneWidget);
   });
 
   testWidgets('the stage shows how the words will be signed; a name is fingerspelled', (tester) async {
@@ -97,7 +109,7 @@ void main() {
     semantics.dispose();
   });
 
-  testWidgets('with sign clips the avatar signs it: word highlighted, sign in the pill, replay, slower',
+  testWidgets('with sign clips the avatar signs it: word highlighted, replay, slower',
       (tester) async {
     final semantics = tester.ensureSemantics();
     final image = (await tester.runAsync(() => createTestImage(width: 4, height: 4, cache: false)))!;
@@ -110,12 +122,12 @@ void main() {
     await tester.pump();
     await tester.pump();
     expect(services.signer.signing, isTrue);
-    expect(find.text('TERIMA KASIH'), findsOneWidget, reason: 'the sign being signed, in the pill');
+    expect(_highlighted(tester), 'Terima kasih', reason: 'the words being signed are highlighted');
     expect(find.bySemanticsLabel('Sign it again'), findsOneWidget);
 
     await _playFor(tester, 300);
     expect(services.signer.signing, isFalse, reason: 'the screen clock played it to the end');
-    expect(find.text('SAID'), findsOneWidget);
+    expect(_highlighted(tester), isEmpty, reason: 'nothing highlighted once it is signed');
 
     await tester.tap(find.bySemanticsLabel('Sign it again'));
     await tester.pump();

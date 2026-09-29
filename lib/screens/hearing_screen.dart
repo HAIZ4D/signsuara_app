@@ -173,9 +173,6 @@ class _Stage extends StatelessWidget {
     final ours = signer.sentence == text; // the signer is on these words
     final signs = listening ? const <SignStep>[] : (ours ? signer.steps : signer.translator.translate(text));
     final current = ours ? signer.currentStep : null;
-    final (gloss, glossSun) = listening
-        ? ('LISTENING…', false)
-        : (current != null ? (signs[current].label, true) : (empty ? ('READY', false) : ('SAID', true)));
     final live = avatar ? signer.signing : listening;
 
     return Container(
@@ -216,7 +213,7 @@ class _Stage extends StatelessWidget {
                           Positioned.fill(
                             child: Padding(
                               // the top chip and buttons sit in the empty corners beside the head
-                              padding: const EdgeInsets.fromLTRB(12, 30, 12, 54),
+                              padding: const EdgeInsets.fromLTRB(12, 30, 12, 16),
                               child: LayoutBuilder(
                                 builder: (context, box) => Column(
                                   children: [
@@ -250,7 +247,7 @@ class _Stage extends StatelessWidget {
                             child: Center(
                               child: SingleChildScrollView(
                                 reverse: true,
-                                padding: const EdgeInsets.fromLTRB(22, 48, 22, 54),
+                                padding: const EdgeInsets.fromLTRB(22, 48, 22, 24),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -310,32 +307,6 @@ class _Stage extends StatelessWidget {
                               ),
                             ]),
                           ),
-                        Positioned(
-                          bottom: 14,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: AnimatedContainer(
-                              duration: AppMotion.medium,
-                              curve: AppMotion.springCurve,
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                gradient: glossSun ? AppGradients.sun : null,
-                                color: glossSun ? null : AppColors.chipOnStage,
-                                borderRadius: BorderRadius.circular(AppRadius.pill),
-                                border: Border.all(color: glossSun ? AppColors.yellow : AppColors.glassBorder),
-                                boxShadow: glossSun ? AppShadows.sunGlow : null,
-                              ),
-                              child: Text(gloss,
-                                  style: AppText.eyebrow.copyWith(
-                                    fontFamily: AppFonts.display,
-                                    fontSize: 13,
-                                    letterSpacing: 1,
-                                    color: glossSun ? AppColors.onYellow : AppColors.onDarkSoft,
-                                  )),
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),

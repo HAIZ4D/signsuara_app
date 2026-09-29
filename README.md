@@ -141,8 +141,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   (`test/fixtures/signs/`: moving dots, not signs).
 - **On the screens** (`lib/signer/signer.dart`): the hearing person's latest finished words
   (spoken or a quick reply) are signed automatically. With clips in the app, the Hearing stage
-  shows the avatar with the words below it, the word being signed highlighted and its sign in
-  the yellow pill, plus "sign it again" and "slower"; in Conversation the dock shows the avatar
+  shows the avatar with the words below it, the word being signed highlighted, plus "sign it
+  again" and "slower"; in Conversation the dock shows the avatar
   while it signs, and a tap on their bubble signs it again. Until the app contains clips, both
   screens stay as text ("BIM signer · coming soon").
 - **Clips** go in `assets/signs/<id>.webp` (see `assets/signs/README.md`); the app finds them by
