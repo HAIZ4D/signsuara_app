@@ -166,9 +166,10 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
-     (400 px). The app picks the new clips up by itself.
-- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b` (posed from BIM Sign
-  Bank pictures, right hand).
+     (560 px). The app picks the new clips up by itself.
+- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`
+  (posed from BIM Sign Bank pictures, right hand). Clips are 560 px; the camera frames the upper
+  body from just above the head to just below the resting hands.
 - **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
   note; the avatar signs the rest.
 

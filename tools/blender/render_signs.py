@@ -15,10 +15,10 @@ import bpy
 
 PROJECT = os.environ.get('SIGNSUARA_PROJECT', r'C:\FlutterProject\signsuara_app')
 ARMATURE = 'Armature'
-ONLY = None  # e.g. {'rest', 'terima_kasih'} to render just these
 
 
-def render_signs():
+def render_signs(only=None):
+    """Renders every "sign:" action, or just the sign ids in [only] (e.g. {'terima_kasih'})."""
     scene = bpy.context.scene
     armature = bpy.data.objects[ARMATURE]
     armature.animation_data_create()
@@ -29,7 +29,7 @@ def render_signs():
             if not action.name.startswith('sign:'):
                 continue
             sign = action.name[len('sign:'):]
-            if ONLY and sign not in ONLY:
+            if only and sign not in only:
                 continue
             armature.animation_data.action = action
             first, last = (int(f) for f in action.frame_range)

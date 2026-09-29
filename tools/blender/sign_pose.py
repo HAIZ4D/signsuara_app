@@ -64,6 +64,30 @@ def point_at(bone, target):
     aim(bone, Vector(target) - pose.head)
 
 
+def reach(side, wrist, elbow_hint=(0, 0.3, -1)):
+    """Puts the wrist of arm [side] at the world point [wrist]: works out where the elbow must be
+    (two bones of fixed length), bending towards [elbow_hint] (default: out, back and down)."""
+    arm = armature()
+    bones = arm.data.bones
+    upper, lower, hand = (f'J_Bip_{side}_{b}' for b in ('UpperArm', 'LowerArm', 'Hand'))
+    l1 = (bones[lower].head_local - bones[upper].head_local).length
+    l2 = (bones[hand].head_local - bones[lower].head_local).length
+    bpy.context.view_layer.update()
+    shoulder = arm.pose.bones[upper].head.copy()
+    to_wrist = Vector(wrist) - shoulder
+    d = min(to_wrist.length, (l1 + l2) * 0.999)
+    along = to_wrist.normalized()
+    a = (l1 * l1 - l2 * l2 + d * d) / (2 * d)
+    h = math.sqrt(max(l1 * l1 - a * a, 0.0))
+    hint = Vector(elbow_hint)
+    if side == 'R':
+        hint.x = -hint.x
+    out = (hint - hint.project(along)).normalized()
+    elbow = shoulder + along * a + out * h
+    point_at(upper, elbow)
+    point_at(lower, shoulder + along * d)
+
+
 def hand_facing(side, fingers, palm):
     """Orients the hand: fingers along [fingers], palm facing [palm] (world directions).
     In the T-pose the fingers point outwards and the palms face down (-Z)."""

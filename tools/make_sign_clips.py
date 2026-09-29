@@ -1,7 +1,7 @@
 """Turns the rendered sign frames into the app's clips (README "Signer").
 
 character/renders/<id>/0001.png ... (800 px, transparent, from tools/blender/render_signs.py)
-  -> assets/signs/<id>.webp (400 px, 24 fps, transparent; one frame = a still picture)
+  -> assets/signs/<id>.webp (560 px, 24 fps, transparent; one frame = a still picture)
 
 Run from the project folder:  python tools/make_sign_clips.py [id ...]   (no ids = all)
 Only signs checked by a fluent BIM signer should be turned into clips.
@@ -13,7 +13,7 @@ from PIL import Image
 
 RENDERS = Path('character/renders')
 OUT = Path('assets/signs')
-SIZE = 400
+SIZE = 560
 FPS = 24
 
 
