@@ -27,8 +27,8 @@ class _AppShellState extends State<AppShell> {
 
   static const _items = [
     NavItem('Home', Icons.home_rounded),
-    NavItem('Conversation', Icons.chat_bubble_outline_rounded),
-    NavItem('Hearing', Icons.volume_up_rounded, sun: true),
+    NavItem('Chat', Icons.chat_bubble_outline_rounded),
+    NavItem('Listen', Icons.volume_up_rounded, sun: true),
     NavItem('Gestures', Icons.back_hand_outlined),
     NavItem('Learn', Icons.school_outlined),
   ];

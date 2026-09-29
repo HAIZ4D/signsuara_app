@@ -66,12 +66,12 @@ void main() {
     expect(find.text('Learn and sign the Arabic letters'), findsOneWidget);
     expect(find.text('Coming soon'), findsOneWidget);
 
-    await openTab('Conversation');
+    await openTab('Chat');
     expect(find.text('Conversation'), findsWidgets);
     expect(find.bySemanticsLabel('You sign'), findsOneWidget);
     expect(find.bySemanticsLabel('They speak'), findsOneWidget);
 
-    await openTab('Hearing');
+    await openTab('Listen');
     expect(find.text('HEARING MODE'), findsOneWidget);
     expect(find.bySemanticsLabel('Tap to speak'), findsOneWidget);
 
