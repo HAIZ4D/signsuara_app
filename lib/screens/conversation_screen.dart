@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../glove/glove_session.dart';
+import '../signer/sign_player_view.dart';
+import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/finger_bend.dart';
@@ -216,7 +218,11 @@ class _Chat extends StatelessWidget {
             onRepeat: () => services.speaker.say(label),
           )
         else
-          ChatBubble.heard(key: ObjectKey(m), text: m.text),
+          ChatBubble.heard(
+            key: ObjectKey(m),
+            text: m.text,
+            onRepeat: services.signer.hasClips ? () => services.signer.signAgain(m.text) : null,
+          ),
       if (listening) _DraftBubble(text: services.transcriber.text),
     ];
     return Column(
@@ -337,7 +343,9 @@ class _Dock extends StatelessWidget {
             switchInCurve: AppMotion.outCurve,
             child: listening
                 ? const _ListeningStage(key: ValueKey('stage'))
-                : _SensorRow(key: const ValueKey('sensors'), services: services, connected: connected),
+                : services.signer.hasClips && services.signer.signing
+                    ? _SigningStage(key: const ValueKey('signing'), signer: services.signer)
+                    : _SensorRow(key: const ValueKey('sensors'), services: services, connected: connected),
           ),
         ],
       ),
@@ -465,6 +473,76 @@ class _SensorRow extends StatelessWidget {
 }
 
 /// Their turn: space reserved for the future BIM signer avatar.
+/// After they speak: the avatar signs their words, then the finger sensors come back.
+class _SigningStage extends StatelessWidget {
+  const _SigningStage({super.key, required this.signer});
+
+  final Signer signer;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = signer.currentStep;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        height: 190,
+        decoration: const BoxDecoration(gradient: AppGradients.stage),
+        foregroundDecoration: const BoxDecoration(gradient: AppGradients.stageGlow),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              top: 8,
+              bottom: 40,
+              child: ExcludeSemantics(child: SignPlayerView(player: signer.player)),
+            ),
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.chipOnStage,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  border: Border.all(color: AppColors.glassBorder),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const PulseDot(color: AppColors.live),
+                  const SizedBox(width: 7),
+                  Text('BIM signer', style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
+                ]),
+              ),
+            ),
+            if (current != null)
+              Positioned(
+                bottom: 10,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Semantics(
+                    liveRegion: true,
+                    label: 'Signing: ${signer.steps[current].text}',
+                    excludeSemantics: true,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: AppGradients.sun,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        boxShadow: AppShadows.sunGlow,
+                      ),
+                      child: Text(signer.steps[current].label,
+                          style: AppText.eyebrow.copyWith(
+                              color: AppColors.onYellow, fontFamily: AppFonts.display, fontSize: 12, letterSpacing: 1)),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ListeningStage extends StatelessWidget {
   const _ListeningStage({super.key});
 

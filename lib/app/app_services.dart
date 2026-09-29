@@ -9,7 +9,7 @@ import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
 import '../history/conversation_history.dart';
 import '../history/conversation_log.dart';
-import '../signer/sign_translator.dart';
+import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../speech/speaker.dart';
 import '../speech/transcriber.dart';
@@ -18,10 +18,11 @@ import '../speech/transcriber.dart';
 /// saved settings. Created once by the app shell, so every tab uses the SAME glove connection.
 /// The wiring below was moved unchanged from the old single home page.
 class AppServices {
-  /// [account] null = a guest (tests). [log] can be given a test clock.
-  AppServices({Account? account, ConversationLog? log})
+  /// [account] null = a guest (tests). [log] can be given a test clock, [signer] test clips.
+  AppServices({Account? account, ConversationLog? log, Signer? signer})
       : account = account ?? Account(null),
-        log = log ?? ConversationLog() {
+        log = log ?? ConversationLog(),
+        signer = signer ?? Signer() {
     history = ConversationHistory(log: this.log, account: this.account, words: words);
     backup = GestureBackup(gestures: gestures, account: this.account);
     session.customMatch = (features) => gestures.matcher.match(features);
@@ -29,6 +30,7 @@ class AppServices {
     session.addListener(_keepScreenOnWhileConnected);
     transcriber.addListener(_muteSpeakerWhileListening);
     transcriber.addListener(_logTranscript);
+    this.log.addListener(_signLatestHeard);
   }
 
   final Account account;
@@ -38,7 +40,7 @@ class AppServices {
   final ConversationLog log;
   late final ConversationHistory history; // created at once: it must see the first message
   late final GestureBackup backup; // starts in start(), after the phone's gestures are loaded
-  final signTranslator = SignTranslator(); // what the hearing person said → BIM signs
+  final Signer signer; // signs what the hearing person said (README "Signer")
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
@@ -46,7 +48,7 @@ class AppServices {
 
   /// Everything a screen may need to redraw for.
   Listenable get changes =>
-      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup]);
+      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup, signer]);
 
   /// A recognised sign: spoken (as before) and added to the conversation.
   void _onGesture(String label) {
@@ -55,6 +57,13 @@ class AppServices {
   }
 
   void _logTranscript() => log.transcript(listening: transcriber.listening, text: transcriber.text);
+
+  /// The hearing person's latest finished words (spoken or a quick reply) are signed.
+  void _signLatestHeard() {
+    if (transcriber.listening) return;
+    final heard = [for (final m in log.messages) if (m.side == Side.them) m.text];
+    signer.show(heard.isEmpty ? '' : heard.last);
+  }
 
   /// The Google account's name, or "Guest".
   String get userName => account.name;
@@ -110,6 +119,8 @@ class AppServices {
     gestures.dispose();
     history.dispose();
     backup.dispose();
+    log.removeListener(_signLatestHeard);
+    signer.dispose();
     log.dispose();
   }
 }

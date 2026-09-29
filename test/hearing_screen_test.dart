@@ -4,13 +4,29 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
 import 'package:signsuara_app/screens/hearing_screen.dart';
+import 'package:signsuara_app/signer/sign_player_view.dart';
+import 'package:signsuara_app/signer/signer.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 
-Future<AppServices> _pumpScreen(WidgetTester tester) async {
-  final services = AppServices();
+import 'fake_clips.dart';
+
+Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer}) async {
+  if (signer != null) {
+    tester.view.physicalSize = const Size(1080, 2400); // a phone: 360 x 800
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+  }
+  final services = AppServices(signer: signer);
   addTearDown(services.dispose);
   await tester.pumpWidget(MaterialApp(theme: buildAppTheme(), home: Scaffold(body: HearingScreen(services: services))));
   return services;
+}
+
+/// The screen clock for [ms]: frames of 20 ms, like a real screen (one picture per frame at most).
+Future<void> _playFor(WidgetTester tester, int ms) async {
+  for (var t = 0; t < ms; t += 20) {
+    await tester.pump(const Duration(milliseconds: 20));
+  }
 }
 
 void main() {
@@ -74,6 +90,37 @@ void main() {
     expect(find.text('TERIMA KASIH'), findsOneWidget);
     expect(find.text('Z·A·D'), findsOneWidget);
     expect(find.bySemanticsLabel('In signs: TERIMA KASIH, spelled Z A D'), findsOneWidget);
+    semantics.dispose();
+  });
+
+  testWidgets('with sign clips the avatar signs it: word highlighted, sign in the pill, replay, slower',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    final image = (await tester.runAsync(() => createTestImage(width: 4, height: 4, cache: false)))!;
+    final services = await _pumpScreen(tester, signer: fakeSigner(image, {'terima_kasih'}));
+    await tester.pump();
+    expect(find.text('BIM signer'), findsOneWidget, reason: 'no longer "coming soon"');
+    expect(find.byType(SignPlayerView), findsOneWidget);
+
+    await tester.tap(find.text('Terima kasih'));
+    await tester.pump();
+    await tester.pump();
+    expect(services.signer.signing, isTrue);
+    expect(find.text('TERIMA KASIH'), findsOneWidget, reason: 'the sign being signed, in the pill');
+    expect(find.bySemanticsLabel('Sign it again'), findsOneWidget);
+
+    await _playFor(tester, 300);
+    expect(services.signer.signing, isFalse, reason: 'the screen clock played it to the end');
+    expect(find.text('SAID'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('Sign it again'));
+    await tester.pump();
+    await tester.pump();
+    expect(services.signer.signing, isTrue);
+
+    await tester.tap(find.bySemanticsLabel('Slower signing'));
+    await tester.pump();
+    expect(services.signer.slow, isTrue);
     semantics.dispose();
   });
 

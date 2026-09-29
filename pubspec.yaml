@@ -72,6 +72,8 @@ flutter:
   assets:
     - assets/fonts/OFL-Sora.txt
     - assets/fonts/OFL-PlusJakartaSans.txt
+    # Sign clips for the BIM signer (README "Signer"); the app finds new ones by itself.
+    - assets/signs/
 
   # Bundled so the app works offline (SIL Open Font License, see assets/fonts/OFL-*.txt).
   fonts:

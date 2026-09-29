@@ -137,6 +137,16 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   stays 0.4 s; half speed is possible; a slow phone waits for the next frame instead of skipping.
   `tools/make_placeholder_clips.py` makes the tiny placeholder clips the tests use
   (`test/fixtures/signs/`: moving dots, not signs).
+- **On the screens** (`lib/signer/signer.dart`): the hearing person's latest finished words
+  (spoken or a quick reply) are signed automatically. With clips in the app, the Hearing stage
+  shows the avatar with the words below it, the word being signed highlighted and its sign in
+  the yellow pill, plus "sign it again" and "slower"; in Conversation the dock shows the avatar
+  while it signs, and a tap on their bubble signs it again. Until the app contains clips, both
+  screens stay as text ("BIM signer · coming soon").
+- **Clips** go in `assets/signs/<id>.webp` (see `assets/signs/README.md`); the app finds them by
+  itself (`lib/signer/sign_clips.dart`). A sign whose clip is not made yet is fingerspelled if the
+  alphabet clips exist; a word that can be neither signed nor fully spelled is left out. An
+  optional `rest.webp` shows the avatar standing ready.
 - **Limitation:** the signing follows the spoken word order (signed Malay or English, word by
   word). Full BIM grammar, facial grammar and use of space are not modelled.
 - **The avatar** is a downloaded VRoid character, animated in Blender and rendered to clips. Its
@@ -172,7 +182,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips |
-| `test/` | 140 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 150 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

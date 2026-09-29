@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../history/conversation_log.dart';
+import '../signer/sign_player_view.dart';
 import '../signer/sign_translator.dart';
+import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/widgets/glass_chip.dart';
@@ -67,12 +69,7 @@ class _HearingScreenState extends State<HearingScreen> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-                        child: _Stage(
-                          text: current,
-                          listening: listening,
-                          large: _large,
-                          signs: listening ? const [] : s.signTranslator.translate(current),
-                        ),
+                        child: _Stage(text: current, listening: listening, large: _large, signer: s.signer),
                       ),
                     ),
                     Padding(
@@ -135,7 +132,11 @@ class _Head extends StatelessWidget {
                   Row(children: [
                     const Icon(Icons.volume_up_rounded, size: 14, color: AppColors.yellow),
                     const SizedBox(width: 6),
-                    Text('HEARING MODE', style: AppText.eyebrow.copyWith(color: AppColors.yellow, fontSize: 12)),
+                    Flexible(
+                      child: Text('HEARING MODE',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.eyebrow.copyWith(color: AppColors.yellow, fontSize: 12)),
+                    ),
                   ]),
                   const SizedBox(height: 6),
                   Text("Speak, and they'll see it", style: AppText.screenTitle.copyWith(fontSize: 22)),
@@ -153,22 +154,28 @@ class _Head extends StatelessWidget {
       );
 }
 
-/// Where the signer will stand one day; now: the words, big (design: .hm-stage).
+/// The signer's space (design: .hm-stage). With sign clips in the app, the avatar signs the words
+/// and they show below it, the word being signed highlighted. Without clips: the words, big,
+/// with how they will be signed as chips.
 class _Stage extends StatelessWidget {
-  const _Stage({required this.text, required this.listening, required this.large, required this.signs});
+  const _Stage({required this.text, required this.listening, required this.large, required this.signer});
 
   final String text;
   final bool listening;
   final bool large;
-  final List<SignStep> signs; // how the words will be signed (the signer itself comes later)
+  final Signer signer;
 
   @override
   Widget build(BuildContext context) {
     final empty = text.trim().isEmpty;
-    final shown = empty
-        ? (listening ? 'Listening…' : 'Tap the mic and talk.\nYour words show up here, big and clear.')
-        : text;
-    final (gloss, glossSun) = listening ? ('LISTENING…', false) : (empty ? ('READY', false) : ('SAID', true));
+    final avatar = signer.hasClips && !listening;
+    final ours = signer.sentence == text; // the signer is on these words
+    final signs = listening ? const <SignStep>[] : (ours ? signer.steps : signer.translator.translate(text));
+    final current = ours ? signer.currentStep : null;
+    final (gloss, glossSun) = listening
+        ? ('LISTENING…', false)
+        : (current != null ? (signs[current].label, true) : (empty ? ('READY', false) : ('SAID', true)));
+    final live = avatar ? signer.signing : listening;
 
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), boxShadow: AppShadows.turqGlow),
@@ -201,45 +208,91 @@ class _Stage extends StatelessWidget {
                           right: 0,
                           child: Center(child: Spin(period: Duration(seconds: 40), child: _Halo(size: 200))),
                         ),
-                        Positioned.fill(
-                          child: Center(
-                            child: SingleChildScrollView(
-                              reverse: true,
-                              padding: const EdgeInsets.fromLTRB(22, 48, 22, 54),
+                        if (avatar)
+                          Positioned.fill(
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 46, 16, 54),
                               child: Column(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Semantics(
-                                    liveRegion: true,
-                                    child: AnimatedDefaultTextStyle(
-                                      duration: AppMotion.fast,
-                                      style: empty
-                                          ? AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 15)
-                                          : AppText.heroTitle.copyWith(fontSize: large ? 36 : 27, height: 1.3),
-                                      child: Text(shown, textAlign: TextAlign.center),
-                                    ),
+                                  Expanded(child: ExcludeSemantics(child: SignPlayerView(player: signer.player))),
+                                  const SizedBox(height: AppSpace.s),
+                                  Flexible(
+                                    // on a short screen the words give way (they never push out of the stage)
+                                    child: empty
+                                        ? Text('Tap the mic and talk. The signer signs it.',
+                                            textAlign: TextAlign.center,
+                                            style: AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 14))
+                                        : _SignedSentence(text: text, steps: signs, current: current, large: large),
                                   ),
-                                  if (signs.isNotEmpty) ...[
-                                    const SizedBox(height: AppSpace.l),
-                                    _SignChips(signs: signs),
-                                  ],
                                 ],
                               ),
                             ),
+                          )
+                        else
+                          Positioned.fill(
+                            child: Center(
+                              child: SingleChildScrollView(
+                                reverse: true,
+                                padding: const EdgeInsets.fromLTRB(22, 48, 22, 54),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Semantics(
+                                      liveRegion: true,
+                                      child: AnimatedDefaultTextStyle(
+                                        duration: AppMotion.fast,
+                                        style: empty
+                                            ? AppText.body.copyWith(color: AppColors.onDarkSoft, fontSize: 15)
+                                            : AppText.heroTitle.copyWith(fontSize: large ? 36 : 27, height: 1.3),
+                                        child: Text(
+                                            empty
+                                                ? (listening
+                                                    ? 'Listening…'
+                                                    : 'Tap the mic and talk.\nYour words show up here, big and clear.')
+                                                : text,
+                                            textAlign: TextAlign.center),
+                                      ),
+                                    ),
+                                    if (signs.isNotEmpty) ...[
+                                      const SizedBox(height: AppSpace.l),
+                                      _SignChips(signs: signs),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
                         Positioned(
                           top: 12,
                           left: 12,
                           child: _StageChip(
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              PulseDot(color: listening ? AppColors.live : AppColors.offline, active: listening),
+                              PulseDot(color: live ? AppColors.live : AppColors.offline, active: live),
                               const SizedBox(width: 7),
-                              Text('BIM signer · coming soon',
+                              Text(avatar ? 'BIM signer' : 'BIM signer · coming soon',
                                   style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
                             ]),
                           ),
                         ),
+                        if (avatar)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Row(children: [
+                              _StageButton(
+                                icon: Icons.replay_rounded,
+                                label: 'Sign it again',
+                                onTap: signs.isEmpty ? null : signer.replay,
+                              ),
+                              const SizedBox(width: 6),
+                              _StageButton(
+                                icon: Icons.slow_motion_video_rounded,
+                                label: 'Slower signing',
+                                selected: signer.slow,
+                                onTap: signer.toggleSlow,
+                              ),
+                            ]),
+                          ),
                         Positioned(
                           bottom: 14,
                           left: 0,
@@ -277,6 +330,78 @@ class _Stage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The words under the signer; the word being signed now is highlighted (design: .hm-chunk.active).
+class _SignedSentence extends StatelessWidget {
+  const _SignedSentence({required this.text, required this.steps, required this.current, required this.large});
+
+  final String text;
+  final List<SignStep> steps;
+  final int? current;
+  final bool large;
+
+  @override
+  Widget build(BuildContext context) {
+    final spans = <InlineSpan>[];
+    var at = 0;
+    for (final (i, step) in steps.indexed) {
+      if (step.start > at) spans.add(TextSpan(text: text.substring(at, step.start)));
+      spans.add(TextSpan(
+        text: text.substring(step.start, step.end),
+        style: i == current ? const TextStyle(color: AppColors.onYellow, backgroundColor: AppColors.yellow) : null,
+      ));
+      at = step.end;
+    }
+    if (at < text.length) spans.add(TextSpan(text: text.substring(at)));
+    return Semantics(
+      liveRegion: true,
+      label: text,
+      excludeSemantics: true,
+      child: Text.rich(
+        TextSpan(style: AppText.heroTitle.copyWith(fontSize: large ? 26 : 20, height: 1.35), children: spans),
+        textAlign: TextAlign.center,
+        maxLines: 4,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+/// A small round button on the stage (replay, slower).
+class _StageButton extends StatelessWidget {
+  const _StageButton({required this.icon, required this.label, required this.onTap, this.selected = false});
+
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        enabled: onTap != null,
+        selected: selected,
+        label: label,
+        excludeSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? AppColors.turqDeep : AppColors.chipOnStage,
+                border: Border.all(color: selected ? AppColors.turqBright : AppColors.glassBorder),
+              ),
+              child: Icon(icon, size: 18, color: onTap == null ? AppColors.onDarkFaint : AppColors.onDark),
+            ),
+          ),
+        ),
+      );
 }
 
 /// The words as signs (glosses): turquoise = a sign from the dictionary, outlined with "abc" =

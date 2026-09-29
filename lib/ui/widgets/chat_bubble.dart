@@ -5,17 +5,17 @@ import '../../theme/app_theme.dart';
 import 'motion.dart';
 
 /// One chat bubble (design: .bubble). Mine = signed and spoken aloud (turquoise, right), with the
-/// other language small below. Theirs = heard (white, left). Tap = [onRepeat] (say it again).
+/// other language small below. Theirs = heard (white, left). Tap = [onRepeat]: say mine again,
+/// or have the signer sign theirs again.
 class ChatBubble extends StatelessWidget {
   ChatBubble.signed({super.key, required SignWords words, required SpeechLanguage language, this.onRepeat})
       : me = true,
         text = words.shown(language),
         sub = _otherLanguage(words, language);
 
-  const ChatBubble.heard({super.key, required this.text})
+  const ChatBubble.heard({super.key, required this.text, this.onRepeat})
       : me = false,
-        sub = null,
-        onRepeat = null;
+        sub = null;
 
   final bool me;
   final String text;
@@ -75,7 +75,7 @@ class ChatBubble extends StatelessWidget {
           child: Semantics(
             button: onRepeat != null,
             label: me ? 'You signed: $text${sub == null ? '' : ', $sub'}' : 'They said: $text',
-            hint: onRepeat == null ? null : 'Double tap to say it again',
+            hint: onRepeat == null ? null : (me ? 'Double tap to say it again' : 'Double tap to see it signed'),
             excludeSemantics: true,
             child: GestureDetector(onTap: onRepeat, child: bubble),
           ),
