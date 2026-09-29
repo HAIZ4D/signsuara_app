@@ -322,6 +322,50 @@ def slim_sleeves(body='Body', cuffs=(('N00_007_01_Tops_01_CLOTH', 0.66), ('N00_0
     return key
 
 
+def hair_colour(images=('_20', '_21', '_07'), hue=0.075, saturation=0.85, value=0.92, restore=False):
+    """Recolours the hair: for each texture in [images] (this model: _20 back hair, _21 hair, _07
+    eyebrows) a copy "<name> brown" gets every pixel's colour turned to [hue] (0.075 = warm brown),
+    with its saturation and brightness scaled (shading and highlights stay), and replaces the
+    original in every material. The originals are kept: restore=True puts them back."""
+    import numpy as np
+    swap = {}
+    for name in images:
+        orig = bpy.data.images[name]
+        orig.use_fake_user = True  # kept in the .blend while unused
+        copy = bpy.data.images.get(name + ' brown')
+        if restore:
+            if copy:
+                swap[copy] = orig
+            continue
+        px = np.empty(len(orig.pixels), dtype=np.float32)
+        orig.pixels.foreach_get(px)
+        px = px.reshape(-1, 4)
+        v = px[:, :3].max(axis=1)
+        s = (v - px[:, :3].min(axis=1)) / np.maximum(v, 1e-6) * saturation
+        v = v * value
+        low = v * (1 - s)
+        # hue between red (0) and yellow (1/6): red is the brightest channel, blue the darkest
+        px[:, 0], px[:, 1], px[:, 2] = v, low + (v - low) * hue * 6, low
+        if copy is None:
+            copy = bpy.data.images.new(name + ' brown', *orig.size, alpha=True)
+            copy.colorspace_settings.name = orig.colorspace_settings.name
+        copy.pixels.foreach_set(px.ravel())
+        copy.pack()
+        swap[orig] = copy
+    for m in bpy.data.materials:
+        for n in (m.node_tree.nodes if m.node_tree else ()):
+            if n.type == 'TEX_IMAGE' and n.image in swap:
+                n.image = swap[n.image]
+        ext = getattr(m, 'vrm_addon_extension', None)
+        if ext:  # the VRM add-on keeps its own texture links (it rebuilds the nodes from them)
+            mtoon = ext.mtoon1
+            for tex in (mtoon.pbr_metallic_roughness.base_color_texture,
+                        mtoon.extensions.vrmc_materials_mtoon.shade_multiply_texture):
+                if tex.index.source in swap:
+                    tex.index.source = swap[tex.index.source]
+    return sorted(i.name for i in swap.values())
+
+
 FACE = 'Face'
 
 

@@ -27,7 +27,6 @@ class HearingScreen extends StatefulWidget {
     ('Terima kasih', 'Thank you'),
     ('Ya', 'Yes'),
     ('Tidak', 'No'),
-    ('Sila', 'Please'),
     ('Saya', 'Me'),
     ('Nama', 'Name'),
   ];

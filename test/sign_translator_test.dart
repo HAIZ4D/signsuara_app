@@ -31,8 +31,8 @@ void main() {
   });
 
   test('English speech uses the same signs', () {
-    expect(labels('Thank you, please.'), ['TERIMA KASIH', 'SILA']);
-    expect(labels('Please wait'), ['SILA', 'W·A·I·T'], reason: 'no sign for "wait": spelled');
+    expect(labels('Thank you, my name.'), ['TERIMA KASIH', 'SAYA', 'NAMA']);
+    expect(labels('Please wait'), ['P·L·E·A·S·E', 'W·A·I·T'], reason: 'no sign for these words: spelled');
     expect(labels('I understand'), ['SAYA', 'FAHAM']);
   });
 
