@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
+import '../listen/note_store.dart';
 
 /// A signed-in Google user: only what the app shows and saves (no tokens).
 class AppUser {
@@ -52,6 +53,9 @@ abstract class AuthBackend {
 
   /// Where this user's custom gestures are backed up.
   GestureStore gesturesFor(AppUser user);
+
+  /// Where this user's Listen notes are kept.
+  NoteStore notesFor(AppUser user);
 }
 
 /// Who is using the app: a Google account, or a guest (no account, no cloud features).
@@ -62,7 +66,7 @@ class Account extends ChangeNotifier {
 
   final AuthBackend? _backend;
   AppUser? _user;
-  ({String uid, HistoryStore history, GestureStore gestures})? _cloud; // the signed-in user's stores
+  _Stores? _cloud; // the signed-in user's stores
   var _busy = false;
   String? _error;
 
@@ -76,11 +80,19 @@ class Account extends ChangeNotifier {
   /// Where the signed-in user's custom gestures are backed up; null for a guest.
   GestureStore? get gestureBackup => _stores()?.gestures;
 
-  ({String uid, HistoryStore history, GestureStore gestures})? _stores() {
+  /// The signed-in user's Listen notes; null for a guest.
+  NoteStore? get notes => _stores()?.notes;
+
+  _Stores? _stores() {
     final user = _user;
     if (user == null) return null;
     if (_cloud?.uid != user.uid) {
-      _cloud = (uid: user.uid, history: _backend!.historyFor(user), gestures: _backend.gesturesFor(user));
+      _cloud = (
+        uid: user.uid,
+        history: _backend!.historyFor(user),
+        gestures: _backend.gesturesFor(user),
+        notes: _backend.notesFor(user),
+      );
     }
     return _cloud;
   }
@@ -167,3 +179,5 @@ class Account extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+typedef _Stores = ({String uid, HistoryStore history, GestureStore gestures, NoteStore notes});

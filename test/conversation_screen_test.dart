@@ -14,15 +14,17 @@ import 'package:signsuara_app/signer/signer.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 
 import 'fake_clips.dart';
+import 'fake_transcriber.dart';
 
-Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer}) async {
+Future<AppServices> _pumpScreen(WidgetTester tester, {Signer? signer, FakeTranscriber? mic}) async {
   if (signer != null) {
     tester.view.physicalSize = const Size(1080, 2400); // a phone: 360 x 800
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
   }
   // Without test clips: a signer with none, whatever clips the app itself ships.
-  final services = AppServices(signer: signer ?? Signer(library: Future.value(const SignClipLibrary({}))));
+  final services =
+      AppServices(signer: signer ?? Signer(library: Future.value(const SignClipLibrary({}))), transcriber: mic);
   addTearDown(services.dispose);
   await tester.pumpWidget(MaterialApp(
     theme: buildAppTheme(),
@@ -107,6 +109,31 @@ void main() {
     await tester.pump();
     expect(services.log.messages, isEmpty);
     expect(find.textContaining('Sign with your glove'), findsOneWidget);
+  });
+
+  testWidgets('while Listen records, the chat mic is busy and none of its words land in the chat', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final mic = FakeTranscriber();
+    final services = await _pumpScreen(tester, mic: mic);
+    await services.startListening();
+    await tester.pump();
+    expect(find.textContaining('Listen is recording'), findsOneWidget);
+
+    await tester.tap(find.bySemanticsLabel('They speak'));
+    await tester.pump();
+    expect(mic.listens, 1, reason: 'only the Listen session listens');
+    expect(services.chatListening, isFalse);
+
+    mic.say('Agenda item one');
+    mic.finish();
+    await tester.pump(const Duration(milliseconds: 300));
+    await services.listenSession.stop();
+    mic.say('the last words, sent after Stop');
+    mic.finish();
+    await tester.pump();
+    expect(services.log.messages, isEmpty, reason: 'Listen and Chat are separate');
+    expect(find.textContaining('Listen is recording'), findsNothing);
+    semantics.dispose();
   });
 
   test('a sign recognised from real glove data is spoken AND added to the conversation', () {

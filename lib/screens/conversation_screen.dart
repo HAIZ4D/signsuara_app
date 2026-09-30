@@ -31,7 +31,7 @@ class ConversationScreen extends StatelessWidget {
       child: ListenableBuilder(
         listenable: services.changes,
         builder: (context, _) {
-          final listening = services.transcriber.listening;
+          final listening = services.chatListening; // Listen's sessions use the same mic, not this chat
           final connected = services.session.link == GloveLink.connected;
           return Column(
             children: [
@@ -203,7 +203,11 @@ class _Chat extends StatelessWidget {
       if (connected && !services.session.motionSensorOk)
         const Notice(message: 'Motion sensor disconnected', color: AppColors.danger),
       if (services.speaker.problem != null) Notice(message: services.speaker.problem!),
-      if (!listening && services.transcriber.problem != null) Notice(message: services.transcriber.problem!),
+      if (!listening && services.chatProblem != null) Notice(message: services.chatProblem!),
+      if (services.listenSession.active)
+        const Notice(
+            message: 'Listen is recording, so the microphone is busy. Stop it on the Listen tab to talk here.',
+            color: AppColors.turqDeep),
     ];
     // Newest at the bottom: build in reading order, show in a reversed list (sticks to the bottom).
     final items = <Widget>[
@@ -335,7 +339,7 @@ class _Dock extends StatelessWidget {
           _TurnToggle(
             listening: listening,
             onYouSign: () => listening ? services.talk() : null, // talk() stops the mic
-            onTheySpeak: () => listening ? null : services.talk(), // talk() starts the mic
+            onTheySpeak: () => listening ? null : services.talk(), // talk() starts the mic (not while Listen records)
           ),
           const SizedBox(height: 10),
           AnimatedSize(

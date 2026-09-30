@@ -12,9 +12,20 @@ class Transcriber extends ChangeNotifier {
   bool listening = false;
   String text = ''; // what was heard; updates live while listening
   String? problem; // shown instead of the text when listening failed
+  String? lastError; // Android's code for the last failure (e.g. error_no_match), null after a new start
 
-  Future<void> listen(SpeechLanguage language) async {
+  /// How many listens have finished: counted when Android says "done", which comes after the final
+  /// words. A Listen session starts the next listen then.
+  var finished = 0;
+
+  /// One listen. By default one sentence (Chat); a Listen session asks for longer ones.
+  Future<void> listen(
+    SpeechLanguage language, {
+    Duration listenFor = const Duration(seconds: 30),
+    Duration pauseFor = const Duration(seconds: 3),
+  }) async {
     problem = null;
+    lastError = null;
     try {
       if (!await _stt.initialize(onStatus: _onStatus, onError: _onError)) {
         problem = 'Speech recognition is not available. It needs the Google app and '
@@ -34,8 +45,8 @@ class Transcriber extends ChangeNotifier {
           listenMode: ListenMode.dictation,
           partialResults: true,
           cancelOnError: true,
-          listenFor: const Duration(seconds: 30),
-          pauseFor: const Duration(seconds: 3),
+          listenFor: listenFor,
+          pauseFor: pauseFor,
         ),
       );
     } catch (e) {
@@ -48,14 +59,17 @@ class Transcriber extends ChangeNotifier {
   Future<void> stop() => _stt.stop();
 
   void _onStatus(String status) {
+    final done = status == SpeechToText.doneStatus;
+    if (done) finished++;
     final now = status == SpeechToText.listeningStatus;
-    if (now == listening) return;
+    if (now == listening && !done) return;
     listening = now;
     notifyListeners();
   }
 
   void _onError(SpeechRecognitionError error) {
     listening = false;
+    lastError = error.errorMsg;
     problem = sttErrorText(error.errorMsg) ?? problem;
     notifyListeners();
   }

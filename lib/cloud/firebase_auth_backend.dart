@@ -9,9 +9,11 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
+import '../listen/note_store.dart';
 import 'account.dart';
 import 'firestore_gesture_store.dart';
 import 'firestore_history_store.dart';
+import 'firestore_note_store.dart';
 
 /// Google sign-in through Firebase: the ONLY file using firebase_core, firebase_auth,
 /// google_sign_in and firebase_storage (profile photos). Firestore is used here for the profile,
@@ -191,6 +193,9 @@ class FirebaseAuthBackend implements AuthBackend {
 
   @override
   GestureStore gesturesFor(AppUser user) => FirestoreGestureStore(user.uid);
+
+  @override
+  NoteStore notesFor(AppUser user) => FirestoreNoteStore(user.uid);
 
   /// Saves users/{uid}: name, email, photo, first and last sign-in. A failed write is only logged
   /// (e.g. Firestore rules not set yet): the app works the same without it.

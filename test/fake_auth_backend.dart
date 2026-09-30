@@ -3,6 +3,7 @@ import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/custom/custom_gesture.dart';
 import 'package:signsuara_app/custom/gesture_store.dart';
 import 'package:signsuara_app/history/history_store.dart';
+import 'package:signsuara_app/listen/note_store.dart';
 
 const testUser = AppUser(uid: 'u1', name: 'Test User', email: 'test.user@example.com');
 
@@ -34,6 +35,12 @@ class FakeAuthBackend implements AuthBackend {
 
   @override
   GestureStore gesturesFor(AppUser user) => gestureStores.putIfAbsent(user.uid, FakeGestureStore.new);
+
+  /// One in-memory notes store per account.
+  final noteStores = <String, MemoryNoteStore>{};
+
+  @override
+  NoteStore notesFor(AppUser user) => noteStores.putIfAbsent(user.uid, MemoryNoteStore.new);
 
   /// Makes the next rename fail.
   SignInFailure? renameFailure;

@@ -1,35 +1,30 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
-import '../history/conversation_log.dart';
+import '../listen/listen_note.dart';
+import '../listen/listen_session.dart';
 import '../signer/sign_player_view.dart';
 import '../signer/sign_translator.dart';
 import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/widgets/glass_chip.dart';
+import '../ui/widgets/gradient_button.dart';
 import '../ui/widgets/motion.dart';
+import '../ui/widgets/note_kind_icon.dart';
 import '../ui/widgets/notice.dart';
 
-/// Hearing mode (design: hearing.jsx): the hearing person talks and the signer reads it big.
-/// The stage is where the BIM signer avatar will go later; for now it shows the words.
+/// Listen (design: hearing.jsx): long listening, like a meeting, a class, a program or a
+/// consultation. The words show live, the signer signs each sentence, and the whole session is kept
+/// as a note (README "Listen and Notes"). Separate from Chat, which is for daily talk.
 class HearingScreen extends StatefulWidget {
   const HearingScreen({super.key, required this.services});
 
   final AppServices services;
-
-  /// Quick replies the hearing person can tap instead of speaking: (Malay, English).
-  /// Every word in them must have a sign (test/sign_translator_test.dart checks it).
-  static const quickReplies = [
-    ('Terima kasih', 'Thank you'),
-    ('Ya', 'Yes'),
-    ('Tidak', 'No'),
-    ('Saya', 'Me'),
-    ('Nama', 'Name'),
-  ];
 
   @override
   State<HearingScreen> createState() => _HearingScreenState();
@@ -46,67 +41,87 @@ class _HearingScreenState extends State<HearingScreen> {
       value: SystemUiOverlayStyle.light, // the hero behind the status bar is dark
       child: ColoredBox(
         color: AppColors.bg,
-        child: Stack(
-          children: [
-            ListenableBuilder(
-              listenable: s.changes,
-              builder: (context, _) {
-                final listening = s.transcriber.listening;
-                final language = s.speaker.language;
-                final heard = [for (final m in s.log.messages) if (m.side == Side.them) m.text];
-                final current = listening ? s.transcriber.text : (heard.isEmpty ? '' : heard.last);
-                final older = listening ? heard : heard.take(max(0, heard.length - 1)).toList();
-                final earlier = older.length > 3 ? older.sublist(older.length - 3) : older;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _Head(language: language, onSwitch: () => s.setLanguage(_other(language))),
-                    if (!listening && s.transcriber.problem != null)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
-                        child: Notice(message: s.transcriber.problem!),
-                      ),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-                        child: _Stage(text: current, listening: listening, large: _large, signer: s.signer),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
-                      child: _EarlierCard(lines: earlier, listening: listening),
-                    ),
-                    SizedBox(
-                      height: 58,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.fromLTRB(18, 12, 18, 0),
-                        children: [
-                          for (final (ms, en) in HearingScreen.quickReplies)
-                            _QuickChip(
-                              text: language == SpeechLanguage.malay ? ms : en,
-                              onTap: () => s.log.addHeard(language == SpeechLanguage.malay ? ms : en),
-                            ),
-                        ],
-                      ),
-                    ),
-                    _Foot(
-                      listening: listening,
-                      large: _large,
-                      canClear: s.log.messages.isNotEmpty,
-                      onTalk: s.talk,
-                      onToggleSize: () => setState(() => _large = !_large),
-                      onClear: s.log.clear,
-                    ),
-                    SizedBox(height: AppSpace.navClearance(context) - AppSpace.s),
-                  ],
-                );
-              },
-            ),
-          ],
+        child: ListenableBuilder(
+          listenable: s.changes,
+          builder: (context, _) {
+            final session = s.listenSession;
+            final listening = session.state == ListenState.listening;
+            final language = session.active ? session.language : s.speaker.language;
+            final lines = session.lines;
+            final latest = lines.isEmpty ? '' : lines.last.text;
+            // With sign clips the signer signs each finished sentence; without, the words show big
+            // (live while they are being heard).
+            final stageText = s.signer.hasClips || session.live.isEmpty || !listening ? latest : session.live;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Head(
+                  language: language,
+                  onSwitch: session.active ? () => _languageFixed(context) : () => s.setLanguage(_other(language)),
+                ),
+                if (session.problem case final problem?)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 10, 18, 0),
+                    child: Notice(message: problem),
+                  ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                    child: _Stage(text: stageText, listening: listening, large: _large, signer: s.signer),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 0),
+                  child: _SessionCard(lines: lines, live: listening ? session.live : '', state: session.state),
+                ),
+                _Foot(
+                  state: session.state,
+                  startedAt: session.startedAt,
+                  large: _large,
+                  onMic: switch (session.state) {
+                    ListenState.idle => s.startListening,
+                    ListenState.listening => session.pause,
+                    ListenState.paused => session.resume,
+                  },
+                  onStop: session.active ? () => _stop(context) : null,
+                  onToggleSize: () => setState(() => _large = !_large),
+                ),
+                SizedBox(height: AppSpace.navClearance(context) - AppSpace.s),
+              ],
+            );
+          },
         ),
       ),
     );
+  }
+
+  void _languageFixed(BuildContext context) => ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('The language can be changed after you stop listening.')));
+
+  /// Stop: the session is saved as it is; the sheet then names it (or throws it away).
+  Future<void> _stop(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final note = await s.listenSession.stop();
+    if (!context.mounted) return;
+    if (note == null) {
+      messenger.showSnackBar(const SnackBar(content: Text('Nothing was heard, so nothing was saved.')));
+      return;
+    }
+    final decision = await showModalBottomSheet<_Decision>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SaveSheet(note: note),
+    );
+    if (decision == null) {
+      messenger.showSnackBar(SnackBar(content: Text('Saved as "${note.title}".')));
+    } else if (decision.discard) {
+      await s.listenSession.discard(note);
+      messenger.showSnackBar(const SnackBar(content: Text('The recording was thrown away.')));
+    } else {
+      final kept = await s.listenSession.keep(note, kind: decision.kind, title: decision.title);
+      messenger.showSnackBar(SnackBar(content: Text('Saved "${kept.title}".')));
+    }
   }
 
   static SpeechLanguage _other(SpeechLanguage l) =>
@@ -182,9 +197,12 @@ class _Stage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final empty = text.trim().isEmpty;
-    final avatar = signer.hasClips && !listening;
+    final avatar = signer.hasClips; // it signs each sentence, also while the next one is heard
     final ours = signer.sentence == text; // the signer is on these words
-    final signs = listening ? const <SignStep>[] : (ours ? signer.steps : signer.translator.translate(text));
+    // Words still being heard (no clips: shown live) are not turned into signs until they are final.
+    final signs = ours
+        ? signer.steps
+        : (listening && !avatar ? const <SignStep>[] : signer.translator.translate(text));
     final current = ours ? signer.currentStep : null;
     final live = avatar ? signer.signing : listening;
 
@@ -253,7 +271,7 @@ class _Stage extends StatelessWidget {
                                       // long words take at most a third; on a short screen they give way
                                       constraints: BoxConstraints(maxHeight: box.maxHeight / 3),
                                       child: empty
-                                          ? Text('Tap the mic and talk. The signer signs it.',
+                                          ? Text('Tap Start listening. The signer signs what they say.',
                                               textAlign: TextAlign.center,
                                               maxLines: 2,
                                               overflow: TextOverflow.ellipsis,
@@ -292,7 +310,7 @@ class _Stage extends StatelessWidget {
                                             empty
                                                 ? (listening
                                                     ? 'Listening…'
-                                                    : 'Tap the mic and talk.\nYour words show up here, big and clear.')
+                                                    : 'Tap Start listening.\nTheir words show up here, big and clear.')
                                                 : text,
                                             textAlign: TextAlign.center),
                                       ),
@@ -561,17 +579,21 @@ class _HaloPainter extends CustomPainter {
   bool shouldRepaint(_HaloPainter old) => false;
 }
 
-/// Their earlier sentences (design: .hm-card "What they said").
-class _EarlierCard extends StatelessWidget {
-  const _EarlierCard({required this.lines, required this.listening});
+/// This session's sentences (design: .hm-card), the newest at the bottom, and the words being heard
+/// right now under them.
+class _SessionCard extends StatelessWidget {
+  const _SessionCard({required this.lines, required this.live, required this.state});
 
-  final List<String> lines;
-  final bool listening;
+  final List<NoteLine> lines;
+  final String live;
+  final ListenState state;
 
   @override
   Widget build(BuildContext context) {
+    final listening = state == ListenState.listening;
+    final title = state != ListenState.idle ? 'THIS SESSION' : (lines.isEmpty ? 'WHAT THEY SAID' : 'LAST SESSION');
     return Container(
-      height: 88, // kept low so the signer's stage gets the height
+      height: 120,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -582,24 +604,26 @@ class _EarlierCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            const ExcludeSemantics(child: Icon(Icons.history_rounded, size: 15, color: AppColors.turq)),
+            const ExcludeSemantics(child: Icon(Icons.subject_rounded, size: 15, color: AppColors.turq)),
             const SizedBox(width: 6),
-            Text('WHAT THEY SAID', style: AppText.eyebrow.copyWith(color: AppColors.inkSoft)),
+            Text(title, style: AppText.eyebrow.copyWith(color: AppColors.inkSoft)),
             const Spacer(),
             if (listening) ...[
               const PulseDot(color: AppColors.yellow),
               const SizedBox(width: 6),
-              Text('Transcribing', style: AppText.eyebrow.copyWith(color: AppColors.onYellowInk, letterSpacing: 0)),
-            ],
+              Text('Listening', style: AppText.eyebrow.copyWith(color: AppColors.onYellowInk, letterSpacing: 0)),
+            ] else if (lines.isNotEmpty)
+              Text('${lines.length} ${lines.length == 1 ? 'sentence' : 'sentences'}',
+                  style: AppText.small.copyWith(color: AppColors.inkSoft)),
           ]),
           const SizedBox(height: 6),
           Expanded(
-            child: lines.isEmpty
-                ? (listening // the wave below says it is listening; the hint would not fit next to it
+            child: lines.isEmpty && live.isEmpty
+                ? (listening // the wave below says it is listening
                     ? const SizedBox.shrink()
                     : Text(
-                        'Earlier sentences are kept here. Quick replies below work without speaking.',
-                        maxLines: 2,
+                        'Listen to a meeting, a class or a consultation. Every sentence is kept as a note.',
+                        maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 13),
                       ))
@@ -607,74 +631,52 @@ class _EarlierCard extends StatelessWidget {
                     reverse: true,
                     padding: EdgeInsets.zero,
                     children: [
+                      if (live.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Text(live,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.strong.copyWith(color: AppColors.inkSoft, fontStyle: FontStyle.italic)),
+                        ),
                       for (final line in lines.reversed)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 4),
-                          child: Text(line,
-                              maxLines: 2,
+                          child: Text(line.text,
+                              maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: AppText.strong.copyWith(color: AppColors.ink)),
                         ),
                     ],
                   ),
           ),
-          if (listening) const Waveform(color: AppColors.turq, bars: 34, height: 18),
+          if (listening && live.isEmpty) const Waveform(color: AppColors.turq, bars: 34, height: 18),
         ],
       ),
     );
   }
 }
 
-class _QuickChip extends StatelessWidget {
-  const _QuickChip({required this.text, required this.onTap});
-
-  final String text;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(right: AppSpace.s),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: () {
-              HapticFeedback.selectionClick();
-              onTap();
-            },
-            customBorder: const StadiumBorder(),
-            child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                border: Border.all(color: AppColors.line),
-              ),
-              child: Text(text, style: AppText.label.copyWith(color: AppColors.ink, fontSize: 13)),
-            ),
-          ),
-        ),
-      );
-}
-
 class _Foot extends StatelessWidget {
   const _Foot({
-    required this.listening,
+    required this.state,
+    required this.startedAt,
     required this.large,
-    required this.canClear,
-    required this.onTalk,
+    required this.onMic,
+    required this.onStop,
     required this.onToggleSize,
-    required this.onClear,
   });
 
-  final bool listening;
+  final ListenState state;
+  final DateTime? startedAt;
   final bool large;
-  final bool canClear;
-  final VoidCallback onTalk;
+  final VoidCallback onMic;
+  final VoidCallback? onStop; // null when there is no session to stop
   final VoidCallback onToggleSize;
-  final VoidCallback onClear;
 
   @override
   Widget build(BuildContext context) {
+    final label = AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 12);
     return Padding(
       padding: const EdgeInsets.fromLTRB(34, 12, 34, 0),
       child: Row(
@@ -686,26 +688,67 @@ class _Foot extends StatelessWidget {
             onTap: onToggleSize,
             child: Text('Aa', style: AppText.label.copyWith(color: AppColors.ink, fontWeight: FontWeight.w800, fontSize: 14)),
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _MicButton(listening: listening, onTap: onTalk),
-              const SizedBox(height: 6),
-              ExcludeSemantics(
-                // The mic button already says this to screen readers; don't read it twice.
-                child: Text(listening ? 'Listening' : 'Tap to speak',
-                    style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 12)),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _MicButton(state: state, onTap: onMic),
+                const SizedBox(height: 6),
+                ExcludeSemantics(
+                  // The mic button already says this to screen readers; don't read it twice.
+                  child: state == ListenState.idle || startedAt == null
+                      ? Text('Start listening', style: label, maxLines: 1, overflow: TextOverflow.ellipsis)
+                      : _Elapsed(prefix: state == ListenState.listening ? 'Listening' : 'Paused', since: startedAt!, style: label),
+                ),
+              ],
+            ),
           ),
           _SideButton(
-            tooltip: 'Clear conversation',
-            onTap: canClear ? onClear : null,
-            child: const Icon(Icons.delete_sweep_rounded, color: AppColors.ink, size: 20),
+            tooltip: 'Stop and save',
+            onTap: onStop,
+            child: const Icon(Icons.stop_rounded, color: AppColors.ink, size: 22),
           ),
         ],
       ),
     );
+  }
+}
+
+/// "Listening · 12:05": how long the session has been going, ticking every second.
+class _Elapsed extends StatefulWidget {
+  const _Elapsed({required this.prefix, required this.since, required this.style});
+
+  final String prefix;
+  final DateTime since;
+  final TextStyle style;
+
+  @override
+  State<_Elapsed> createState() => _ElapsedState();
+}
+
+class _ElapsedState extends State<_Elapsed> {
+  late final Timer _tick = Timer.periodic(const Duration(seconds: 1), (_) => setState(() {}));
+
+  @override
+  void initState() {
+    super.initState();
+    _tick; // starts it
+  }
+
+  @override
+  void dispose() {
+    _tick.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = DateTime.now().difference(widget.since);
+    String two(int n) => n.toString().padLeft(2, '0');
+    final time = d.inHours > 0
+        ? '${d.inHours}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}'
+        : '${two(d.inMinutes)}:${two(d.inSeconds % 60)}';
+    return Text('${widget.prefix} · $time', style: widget.style, maxLines: 1, overflow: TextOverflow.ellipsis);
   }
 }
 
@@ -746,18 +789,24 @@ class _SideButton extends StatelessWidget {
       );
 }
 
-/// Big yellow tap-to-talk button with a turning ring while listening (design: .reply-ptt).
+/// Big yellow button with a turning ring while listening (design: .reply-ptt): Start, Pause, Continue.
 class _MicButton extends StatelessWidget {
-  const _MicButton({required this.listening, required this.onTap});
+  const _MicButton({required this.state, required this.onTap});
 
-  final bool listening;
+  final ListenState state;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final listening = state == ListenState.listening;
+    final (icon, label) = switch (state) {
+      ListenState.idle => (Icons.mic_rounded, 'Start listening'),
+      ListenState.listening => (Icons.pause_rounded, 'Pause listening'),
+      ListenState.paused => (Icons.mic_rounded, 'Continue listening'),
+    };
     return Semantics(
       button: true,
-      label: listening ? 'Stop listening' : 'Tap to speak',
+      label: label,
       excludeSemantics: true,
       child: GestureDetector(
         onTap: onTap,
@@ -782,7 +831,7 @@ class _MicButton extends StatelessWidget {
                     BoxShadow(color: AppColors.yellow.withValues(alpha: 0.1), spreadRadius: 8),
                   ],
                 ),
-                child: Icon(listening ? Icons.stop_rounded : Icons.mic_rounded, size: 30, color: AppColors.onYellow),
+                child: Icon(icon, size: 30, color: AppColors.onYellow),
               ),
             ],
           ),
@@ -808,4 +857,179 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) => false;
+}
+
+/// What the save sheet decided: keep the note as [kind] with [title], or throw it away.
+class _Decision {
+  const _Decision.keep(this.kind, this.title) : discard = false;
+  const _Decision.discard()
+      : kind = NoteKind.other,
+        title = '',
+        discard = true;
+
+  final NoteKind kind;
+  final String title;
+  final bool discard;
+}
+
+/// After Stop: what was it (meeting, class...) and its title. Closing the sheet keeps the note as it is.
+class _SaveSheet extends StatefulWidget {
+  const _SaveSheet({required this.note});
+
+  final ListenNote note;
+
+  @override
+  State<_SaveSheet> createState() => _SaveSheetState();
+}
+
+class _SaveSheetState extends State<_SaveSheet> {
+  var _kind = NoteKind.meeting;
+  late final _title = TextEditingController(text: ListenSession.defaultTitle(_kind, widget.note.startedAt));
+  var _edited = false; // a typed title is not replaced when the kind changes
+
+  @override
+  void dispose() {
+    _title.dispose();
+    super.dispose();
+  }
+
+  void _pick(NoteKind kind) => setState(() {
+        _kind = kind;
+        if (!_edited) _title.text = ListenSession.defaultTitle(kind, widget.note.startedAt);
+      });
+
+  Future<void> _discard() async {
+    final sure = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Throw this recording away?'),
+        content: const Text('Everything heard in this session will be deleted.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep it')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Throw away')),
+        ],
+      ),
+    );
+    if (sure == true && mounted) Navigator.pop(context, const _Decision.discard());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final note = widget.note;
+    final minutes = note.duration.inMinutes;
+    final eyebrow = AppText.eyebrow.copyWith(color: AppColors.inkSoft);
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(AppRadius.pill)),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.l),
+                Text('Save this listening', style: AppText.section.copyWith(fontSize: 20)),
+                const SizedBox(height: AppSpace.xs),
+                Text(
+                    '${note.lines.length} ${note.lines.length == 1 ? 'sentence' : 'sentences'} · '
+                    '${minutes < 1 ? 'under a minute' : '$minutes min'}',
+                    style: AppText.body.copyWith(color: AppColors.inkSoft)),
+                const SizedBox(height: AppSpace.xl),
+                Text('WHAT WAS IT?', style: eyebrow),
+                const SizedBox(height: AppSpace.s),
+                Wrap(
+                  spacing: AppSpace.s,
+                  runSpacing: AppSpace.s,
+                  children: [
+                    for (final kind in NoteKind.values)
+                      _KindChip(kind: kind, selected: kind == _kind, onTap: () => _pick(kind)),
+                  ],
+                ),
+                const SizedBox(height: AppSpace.xl),
+                Text('TITLE', style: eyebrow),
+                const SizedBox(height: AppSpace.s),
+                TextField(
+                  controller: _title,
+                  onChanged: (_) => _edited = true,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: AppText.strong.copyWith(color: AppColors.ink),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: AppColors.surface2,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpace.xl),
+                GradientButton(
+                  label: 'Save note',
+                  icon: Icons.bookmark_added_rounded,
+                  onTap: () => Navigator.pop(context, _Decision.keep(_kind, _title.text)),
+                ),
+                const SizedBox(height: AppSpace.s),
+                TextButton(
+                  onPressed: _discard,
+                  child: Text('Throw it away', style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 14)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One kind to choose in the save sheet.
+class _KindChip extends StatelessWidget {
+  const _KindChip({required this.kind, required this.selected, required this.onTap});
+
+  final NoteKind kind;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: selected,
+        label: kind.label,
+        excludeSemantics: true,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const StadiumBorder(),
+            child: Ink(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: selected ? AppGradients.turq : null,
+                color: selected ? null : AppColors.surface2,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                boxShadow: selected ? AppShadows.turqTile : null,
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(noteKindIcon(kind), size: 17, color: selected ? AppColors.onDark : AppColors.turqDeep),
+                const SizedBox(width: 7),
+                Text(kind.label,
+                    style: AppText.label.copyWith(color: selected ? AppColors.onDark : AppColors.ink, fontSize: 13.5)),
+              ]),
+            ),
+          ),
+        ),
+      );
 }

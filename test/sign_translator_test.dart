@@ -1,5 +1,4 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:signsuara_app/screens/hearing_screen.dart';
 import 'package:signsuara_app/signer/bim_signs.dart';
 import 'package:signsuara_app/signer/sign_translator.dart';
 
@@ -48,14 +47,6 @@ void main() {
     expect(labels('  ya!!  TIDAK?? '), ['YA', 'TIDAK']);
     expect(translator.translate(''), isEmpty);
     expect(translator.translate('... !!'), isEmpty);
-  });
-
-  test('every quick reply in Hearing mode is fully signed (no spelling)', () {
-    for (final (malay, english) in HearingScreen.quickReplies) {
-      for (final reply in [malay, english]) {
-        expect(translator.translate(reply).where((s) => s.spelled), isEmpty, reason: '"$reply" needs its signs');
-      }
-    }
   });
 
   test('the dictionary is consistent', () {

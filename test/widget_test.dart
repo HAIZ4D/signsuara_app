@@ -73,7 +73,7 @@ void main() {
 
     await openTab('Listen');
     expect(find.text('HEARING MODE'), findsOneWidget);
-    expect(find.bySemanticsLabel('Tap to speak'), findsOneWidget);
+    expect(find.bySemanticsLabel('Start listening'), findsOneWidget);
 
     await openTab('Gestures');
     expect(find.textContaining('No custom gestures yet'), findsOneWidget);

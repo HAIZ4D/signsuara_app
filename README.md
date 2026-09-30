@@ -10,7 +10,9 @@ Universiti Putra Malaysia (UPM).
 
 - **Live sign recognition on the phone, offline**: a Random Forest exported to Dart; no server.
 - **Speech output** in Malay or English (BM/EN switch, remembered after restart).
-- **Speech-to-text** for the hearing person: tap to talk, the text is shown large.
+- **Speech-to-text** for the hearing person: in **Chat** tap to talk (daily two-way talk); in
+  **Listen** the phone listens on and on (a meeting, a class, a program, a consultation) and every
+  sentence is kept as a **note** (see "Listen and Notes").
 - **Custom gestures**: record your own gesture on the phone and give it a Malay/English phrase.
 - **Optional Google sign-in** (Firebase): the app greets you by name, keeps your
   **conversation history** (read back or delete past conversations) and **backs up your custom
@@ -97,6 +99,29 @@ phone stays silent while it is listening, so it never transcribes its own voice.
 are shown in plain words, except "error_client": many phones report it whenever a listen closes,
 even when the words came through fine, so it is not shown.
 
+## Listen and Notes
+
+**Listen** is for listening for a long time, like a meeting, a class, a program or a doctor's
+consultation. **Chat** is for daily two-way talk. They are separate: a Listen session is not part
+of the chat or its history.
+
+- **A session** (`lib/listen/listen_session.dart`): Start, then Pause / Continue, then Stop. The
+  words show live; each finished sentence is kept as a line and signed by the avatar. Android's
+  speech recogniser stops after every pause, so the session starts it again after each sentence
+  (one listen lasts at most 60 s and waits 5 s through a pause). Silence just starts it again; a
+  real problem (no internet, no microphone permission) pauses the session with the reason and a
+  Continue button. The phone stays silent and the screen stays on for the whole session. While it
+  runs, Chat's microphone is busy.
+- **Kept as a note** (`lib/listen/listen_note.dart`): after Stop you choose what it was (Meeting,
+  Class, Consultation, Program or Other) and a title, or throw it away. The note is also saved
+  every 3 sentences while the session runs, so a closed app loses little. Signed in: in the
+  account (`users/{uid}/notes`, see "Firebase setup"); guest: kept until the app closes.
+- **Coming next:** a Notes tab to read the notes again, and summaries made by Gemini when you ask
+  for one.
+- **Limitations:** the restart after each sentence takes a moment, so a word said exactly then can
+  be missed; some phones play a short sound each time listening starts; speech recognition needs
+  internet, and a long session uses more battery.
+
 ## Custom gestures
 
 - The user records a gesture **5 times × 3 s** and chooses **Still** or **Moving**. Windows are
@@ -125,13 +150,12 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 - **Words → signs** (`lib/signer/sign_translator.dart`): known phrases first (the longest wins,
   "terima kasih" is one sign), then single words (also without a spoken -lah, -kah, -nya or
   -pun ending), and everything else is fingerspelled; digits use number signs. Malay and English
-  speech use the same signs. The Hearing stage already shows the result as sign chips
+  speech use the same signs. Without sign clips, the Listen stage shows the result as sign chips
   (outlined "abc" chips are fingerspelled).
 - **The dictionary** (`kBimSigns` in `lib/signer/bim_signs.dart`) lists meanings only: a sign
   id and the words signed with it. Adding a sign = one line there, then its clip
   `assets/signs/<id>.webp`. Every sign must be checked by a fluent BIM signer before its clip is
-  added. `test/sign_translator_test.dart` fails if a Hearing quick reply has a word without a
-  sign.
+  added.
 - **The player** (`lib/signer/sign_player.dart`, `sign_player_view.dart`) plays the clips one
   after another: animated WebP with a transparent background, decoded with Flutter's own image
   decoder (no extra package). Every clip starts and ends in the avatar's rest pose, so the joins
@@ -139,10 +163,10 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   stays 0.4 s; half speed is possible; a slow phone waits for the next frame instead of skipping.
   `tools/make_placeholder_clips.py` makes the tiny placeholder clips the tests use
   (`test/fixtures/signs/`: moving dots, not signs).
-- **On the screens** (`lib/signer/signer.dart`): the hearing person's latest finished words
-  (spoken or a quick reply) are signed automatically. With clips in the app, the Hearing stage
-  shows the avatar with the words below it, the word being signed highlighted, plus "sign it
-  again" and "slower"; in Conversation the dock shows the avatar
+- **On the screens** (`lib/signer/signer.dart`): the hearing person's latest finished words are
+  signed automatically; in Listen each sentence as soon as it is heard, while the next one is
+  listened for. With clips in the app, the Listen stage shows the avatar with the words below it,
+  the word being signed highlighted, plus "sign it again" and "slower"; in Chat the dock shows the avatar
   while it signs, and a tap on their bubble signs it again. Until the app contains clips, both
   screens stay as text ("BIM signer · coming soon").
 - **Clips** go in `assets/signs/<id>.webp` (see `assets/signs/README.md`); the app finds them by
@@ -180,7 +204,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
      (560 px). The app picks the new clips up by itself.
 - **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
   `saya`, `nama`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
-  both hands). So every Hearing quick reply (Terima kasih, Ya, Tidak, Saya, Nama) is signed.
+  both hands).
   SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
   middle of the chest, one small light touch; NAMA = two H hands (index and middle finger straight
   and together, ring and little finger curled, thumb folded across them) in front of the lower
@@ -212,7 +236,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
-| `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Conversation, Hearing, Learn, history, Profile & settings |
+| `lib/listen/` | Listen sessions and their notes (the note, its store) |
+| `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Chat (conversation), Listen (hearing), Learn, history, Profile & settings |
 | `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
 | `lib/signer/` | words → BIM signs: the sign dictionary, the translator and the clip player |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
@@ -294,6 +319,9 @@ Saved per user:
   `{who: "them", text, at}` (heard words). A conversation starts with the first message after
   the app opens, after the chat is cleared, or after 5 minutes without messages.
   Firestore keeps a copy on the phone, so saving works offline and is sent later.
+- `users/{uid}/notes/{id}`: a Listen session: `kind` (meeting, lesson, consultation, program,
+  other), `title`, `language` (malay or english), `startedAt`, `endedAt` and `lines`, a list of
+  `{text, at}` (one per sentence heard).
 - `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `savedAt` and `recordings` (the raw
   recordings as one JSON text, because Firestore can't store lists inside lists).
   The list on the phone is the one the app uses; the account keeps a copy
