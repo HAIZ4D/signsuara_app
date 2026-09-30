@@ -338,14 +338,18 @@ class _Dock extends StatelessWidget {
             onTheySpeak: () => listening ? null : services.talk(), // talk() starts the mic
           ),
           const SizedBox(height: 10),
-          AnimatedSwitcher(
+          AnimatedSize(
             duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.medium,
-            switchInCurve: AppMotion.outCurve,
-            child: listening
-                ? const _ListeningStage(key: ValueKey('stage'))
-                : services.signer.hasClips && services.signer.signing
-                    ? _SigningStage(key: const ValueKey('signing'), signer: services.signer)
-                    : _SensorRow(key: const ValueKey('sensors'), services: services, connected: connected),
+            curve: AppMotion.outCurve,
+            child: AnimatedSwitcher(
+              duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.medium,
+              switchInCurve: AppMotion.outCurve,
+              child: listening
+                  ? _ListeningStage(key: const ValueKey('stage'), hasClips: services.signer.hasClips)
+                  : services.signer.hasClips && services.signer.signing
+                      ? _SigningStage(key: const ValueKey('signing'), signer: services.signer)
+                      : _SensorRow(key: const ValueKey('sensors'), services: services, connected: connected),
+            ),
           ),
         ],
       ),
@@ -472,8 +476,7 @@ class _SensorRow extends StatelessWidget {
   }
 }
 
-/// Their turn: space reserved for the future BIM signer avatar.
-/// After they speak: the avatar signs their words, then the finger sensors come back.
+/// After they speak: the BIM signer avatar signs their words, then the finger sensors come back.
 class _SigningStage extends StatelessWidget {
   const _SigningStage({super.key, required this.signer});
 
@@ -485,16 +488,23 @@ class _SigningStage extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(22),
       child: Container(
-        height: 190,
+        height: 280, // big enough to read the handshapes
         decoration: const BoxDecoration(gradient: AppGradients.stage),
         child: Stack(
           children: [
             // The glow sits behind the signer, so its colours stay true.
             const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageGlow))),
             Positioned.fill(
-              top: 8,
-              bottom: 40,
-              child: ExcludeSemantics(child: SignPlayerView(player: signer.player)),
+              top: 6,
+              bottom: 38,
+              // her clip is cut at the skirt, so its bottom edge fades into the stage
+              child: ExcludeSemantics(
+                child: ShaderMask(
+                  blendMode: BlendMode.dstIn,
+                  shaderCallback: AppGradients.avatarFade.createShader,
+                  child: SignPlayerView(player: signer.player),
+                ),
+              ),
             ),
             Positioned(
               top: 10,
@@ -545,7 +555,9 @@ class _SigningStage extends StatelessWidget {
 }
 
 class _ListeningStage extends StatelessWidget {
-  const _ListeningStage({super.key});
+  const _ListeningStage({super.key, required this.hasClips});
+
+  final bool hasClips; // with clips the signer is here, so no "coming soon"
 
   @override
   Widget build(BuildContext context) {
@@ -572,7 +584,8 @@ class _ListeningStage extends StatelessWidget {
               child: chip(Row(mainAxisSize: MainAxisSize.min, children: [
                 const Icon(Icons.accessibility_new_rounded, size: 13, color: AppColors.onDarkSoft),
                 const SizedBox(width: 6),
-                Text('BIM signer · coming soon', style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
+                Text(hasClips ? 'BIM signer' : 'BIM signer · coming soon',
+                    style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
               ])),
             ),
             const Positioned(

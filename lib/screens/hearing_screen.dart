@@ -313,7 +313,7 @@ class _Stage extends StatelessWidget {
                             child: Row(mainAxisSize: MainAxisSize.min, children: [
                               PulseDot(color: live ? AppColors.live : AppColors.offline, active: live),
                               const SizedBox(width: 7),
-                              Text(avatar ? 'BIM signer' : 'BIM signer · coming soon',
+                              Text(signer.hasClips ? 'BIM signer' : 'BIM signer · coming soon',
                                   style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
                             ]),
                           ),
