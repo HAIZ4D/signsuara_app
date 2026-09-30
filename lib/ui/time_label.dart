@@ -32,3 +32,11 @@ String dayName(DateTime t, {DateTime? now}) {
 
 /// "Today, 10:32 AM"
 String dayAndTime(DateTime t, {DateTime? now}) => '${dayName(t, now: now)}, ${clockTime(t)}';
+
+/// "under a minute", "12 min", "1 h 5 min"
+String durationLabel(Duration d) {
+  if (d.inMinutes < 1) return 'under a minute';
+  if (d.inHours < 1) return '${d.inMinutes} min';
+  final minutes = d.inMinutes % 60;
+  return minutes == 0 ? '${d.inHours} h' : '${d.inHours} h $minutes min';
+}

@@ -10,7 +10,7 @@ import '../glove/glove_session.dart';
 import '../history/conversation_history.dart';
 import '../history/conversation_log.dart';
 import '../listen/listen_session.dart';
-import '../listen/note_store.dart';
+import '../listen/notes.dart';
 import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../speech/speaker.dart';
@@ -35,7 +35,7 @@ class AppServices {
         return this.transcriber.listen(language, listenFor: _sessionListenFor, pauseFor: _sessionPauseFor);
       },
       stopListening: this.transcriber.stop,
-      store: () => this.account.notes ?? _guestNotes,
+      store: () => notes.store,
     );
     session.customMatch = (features) => gestures.matcher.match(features);
     speaker.lookup = words;
@@ -60,7 +60,7 @@ class AppServices {
   late final ConversationHistory history; // created at once: it must see the first message
   late final GestureBackup backup; // starts in start(), after the phone's gestures are loaded
   late final ListenSession listenSession; // Listen tab: meetings, classes... kept as notes
-  final _guestNotes = MemoryNoteStore(); // a guest's notes: until the app closes
+  late final notes = Notes(account: account); // the Notes tab: the account's, or the guest's
   final Signer signer; // signs what the hearing person said (README "Signer")
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
@@ -70,7 +70,7 @@ class AppServices {
 
   /// Everything a screen may need to redraw for.
   Listenable get changes =>
-      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup, signer, listenSession]);
+      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup, signer, listenSession, notes]);
 
   /// Chat's own listening (a Listen session uses the same microphone).
   bool get chatListening => transcriber.listening && !_micForListen;
@@ -188,6 +188,7 @@ class AppServices {
     backup.dispose();
     log.removeListener(_signLatestHeard);
     listenSession.dispose();
+    notes.dispose();
     signer.dispose();
     log.dispose();
   }

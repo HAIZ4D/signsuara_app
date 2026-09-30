@@ -23,11 +23,20 @@ class MemoryNoteStore implements NoteStore {
       (_all.values.toList()..sort((a, b) => b.startedAt.compareTo(a.startedAt))).take(limit).toList();
 
   @override
-  Stream<List<ListenNote>> watch({int limit = 100}) async* {
-    yield _newest(limit);
-    await for (final _ in _changed.stream) {
-      yield _newest(limit);
-    }
+  Stream<List<ListenNote>> watch({int limit = 100}) {
+    // Listens for changes at once, so a note saved right after watch() is never missed.
+    StreamSubscription<void>? changes;
+    late final StreamController<List<ListenNote>> out;
+    out = StreamController(
+      onListen: () {
+        out.add(_newest(limit));
+        changes = _changed.stream.listen((_) => out.add(_newest(limit)));
+      },
+      onCancel: () {
+        changes?.cancel(); // not waited for: nothing depends on it
+      },
+    );
+    return out.stream;
   }
 
   @override

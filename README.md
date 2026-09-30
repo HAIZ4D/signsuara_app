@@ -116,8 +116,12 @@ of the chat or its history.
   Class, Consultation, Program or Other) and a title, or throw it away. The note is also saved
   every 3 sentences while the session runs, so a closed app loses little. Signed in: in the
   account (`users/{uid}/notes`, see "Firebase setup"); guest: kept until the app closes.
-- **Coming next:** a Notes tab to read the notes again, and summaries made by Gemini when you ask
-  for one.
+- **Notes tab** (`lib/screens/notes_screen.dart`, replaces the old Learn placeholder): every note,
+  newest first and grouped by day, with its kind, time, length and first words; the numbers at the
+  top are real (notes, time listened). A note (`note_screen.dart`) shows every sentence with its
+  time, and can be copied as text, edited (kind and title, with the same sheet as after Stop) or
+  deleted. Home shows the latest note, and a Notes tile with the count.
+- **Coming next:** summaries made by Gemini when you ask for one.
 - **Limitations:** the restart after each sentence takes a moment, so a word said exactly then can
   be missed; some phones play a short sound each time listening starts; speech recognition needs
   internet, and a long session uses more battery.
@@ -236,8 +240,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
-| `lib/listen/` | Listen sessions and their notes (the note, its store) |
-| `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Chat (conversation), Listen (hearing), Learn, history, Profile & settings |
+| `lib/listen/` | Listen sessions and their notes (the note, its store, the list for Notes and Home) |
+| `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Chat (conversation), Listen (hearing), Notes (list + one note), history, Profile & settings |
 | `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
 | `lib/signer/` | words → BIM signs: the sign dictionary, the translator and the clip player |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |

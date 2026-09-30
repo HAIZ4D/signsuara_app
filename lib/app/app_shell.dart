@@ -5,7 +5,7 @@ import '../custom/custom_gestures_page.dart';
 import '../screens/conversation_screen.dart';
 import '../screens/hearing_screen.dart';
 import '../screens/home_screen.dart';
-import '../screens/learn_screen.dart';
+import '../screens/notes_screen.dart';
 import '../screens/profile_screen.dart';
 import '../theme/app_theme.dart';
 import '../ui/widgets/capsule_nav.dart';
@@ -30,7 +30,7 @@ class _AppShellState extends State<AppShell> {
     NavItem('Chat', Icons.chat_bubble_outline_rounded),
     NavItem('Listen', Icons.volume_up_rounded, sun: true),
     NavItem('Gestures', Icons.back_hand_outlined),
-    NavItem('Learn', Icons.school_outlined),
+    NavItem('Notes', Icons.sticky_note_2_outlined),
   ];
 
   @override
@@ -67,7 +67,7 @@ class _AppShellState extends State<AppShell> {
               HearingScreen(services: services),
               CustomGesturesPage(
                   gestures: services.gestures, session: services.session, ble: services.ble, backup: services.backup),
-              const LearnScreen(),
+              NotesScreen(services: services, onOpenListen: () => _go(HomeScreen.hearingTab)),
             ],
           ),
           Positioned(

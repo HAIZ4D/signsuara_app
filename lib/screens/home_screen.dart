@@ -2,14 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
+import '../listen/listen_note.dart';
 import '../theme/app_theme.dart';
 import '../ui/time_label.dart';
 import '../ui/widgets/conversation_tile.dart';
 import '../ui/widgets/glove_card.dart';
 import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
+import '../ui/widgets/note_kind_icon.dart';
 import '../ui/widgets/user_avatar.dart';
 import 'history_screen.dart';
+import 'note_screen.dart';
 
 /// Home dashboard (design: home.jsx). Only real data: no battery, no invented stats.
 class HomeScreen extends StatelessWidget {
@@ -19,7 +22,7 @@ class HomeScreen extends StatelessWidget {
   final ValueChanged<int> onOpenTab; // tab index in the app shell
   final VoidCallback onOpenProfile;
 
-  static const conversationTab = 1, hearingTab = 2, gesturesTab = 3, learnTab = 4;
+  static const conversationTab = 1, hearingTab = 2, gesturesTab = 3, notesTab = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -97,12 +100,16 @@ class HomeScreen extends StatelessWidget {
                     child: FadeUp(
                       delay: const Duration(milliseconds: 190),
                       child: _Tile(
-                        icon: Icons.school_rounded,
-                        title: 'Learn',
-                        subtitle: 'Coming soon',
+                        icon: Icons.sticky_note_2_rounded,
+                        title: 'Notes',
+                        subtitle: switch (services.notes.all.length) {
+                          0 => 'No notes yet',
+                          1 => '1 note',
+                          final n => '$n notes',
+                        },
                         gradient: AppGradients.blueTile,
                         shadow: AppShadows.blueTile,
-                        onTap: () => onOpenTab(learnTab),
+                        onTap: () => onOpenTab(notesTab),
                       ),
                     ),
                   ),
@@ -111,7 +118,11 @@ class HomeScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 14, AppSpace.gutter, 0),
-              child: _SignOfTheDay(onTap: () => onOpenTab(learnTab)),
+              child: _LatestNote(
+                note: services.notes.all.firstOrNull,
+                onOpen: (note) => openNote(context, services, note),
+                onListen: () => onOpenTab(hearingTab),
+              ),
             ),
             SectionHeader(
               title: 'Recent conversations',
@@ -342,17 +353,24 @@ class _Tile extends StatelessWidget {
   }
 }
 
-/// Static "Sign of the day" card: a future reference only (the model doesn't know this sign yet).
-class _SignOfTheDay extends StatelessWidget {
-  const _SignOfTheDay({required this.onTap});
+/// The newest note (design: the .hx-daily card); it opens the note. Before the first one: where
+/// notes come from, and the way to Listen.
+class _LatestNote extends StatelessWidget {
+  const _LatestNote({required this.note, required this.onOpen, required this.onListen});
 
-  final VoidCallback onTap;
+  final ListenNote? note;
+  final ValueChanged<ListenNote> onOpen;
+  final VoidCallback onListen;
 
   @override
   Widget build(BuildContext context) {
+    final note = this.note;
+    final (eyebrow, title, detail) = note == null
+        ? ('NOTES', 'Your notes will appear here', 'Listen to a meeting, a class or a consultation')
+        : ('LATEST NOTE', note.title, _detail(note));
     return Semantics(
       button: true,
-      label: 'Sign of the day: SubhanAllah, Glory be to God. Learning is coming soon.',
+      label: note == null ? 'Notes: $title. Open Listen.' : 'Latest note: $title, $detail',
       excludeSemantics: true,
       child: Container(
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(26), boxShadow: AppShadows.card),
@@ -363,36 +381,45 @@ class _SignOfTheDay extends StatelessWidget {
             child: Ink(
               decoration: const BoxDecoration(gradient: AppGradients.night),
               child: InkWell(
-                onTap: onTap,
+                onTap: note == null ? onListen : () => onOpen(note),
                 child: CustomPaint(
                   painter: _DotGrid(),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
                     child: Row(
                       children: [
+                        if (note != null) ...[
+                          NoteKindBadge(kind: note.kind, size: 44),
+                          const SizedBox(width: 14),
+                        ],
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(children: [
-                                const Icon(Icons.auto_awesome_rounded, size: 13, color: AppColors.yellow),
+                                const Icon(Icons.sticky_note_2_rounded, size: 13, color: AppColors.yellow),
                                 const SizedBox(width: 5),
-                                Text('SIGN OF THE DAY', style: AppText.eyebrow.copyWith(color: AppColors.yellow)),
+                                Text(eyebrow, style: AppText.eyebrow.copyWith(color: AppColors.yellow)),
                               ]),
                               const SizedBox(height: 4),
-                              Text('SubhanAllah', style: AppText.cardTitle.copyWith(fontSize: 19)),
-                              Text('Glory be to God · coming soon',
+                              Text(title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppText.cardTitle.copyWith(fontSize: 17)),
+                              const SizedBox(height: 2),
+                              Text(detail,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                   style: AppText.small.copyWith(color: AppColors.onDarkSoft, fontSize: 12.5)),
+                              if (note != null && note.lines.isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(note.lines.first.text,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppText.small.copyWith(color: AppColors.onDark, fontSize: 12.5)),
+                                ),
                             ],
-                          ),
-                        ),
-                        Text(
-                          'سبحان الله',
-                          textDirection: TextDirection.rtl,
-                          style: TextStyle(
-                            fontSize: 23,
-                            color: AppColors.onDark.withValues(alpha: 0.92),
-                            shadows: [Shadow(color: AppColors.turqBright.withValues(alpha: 0.7), blurRadius: 24)],
                           ),
                         ),
                         const SizedBox(width: AppSpace.m),
@@ -404,7 +431,8 @@ class _SignOfTheDay extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: [BoxShadow(color: AppColors.yellow.withValues(alpha: 0.15), spreadRadius: 6)],
                           ),
-                          child: const Icon(Icons.play_arrow_rounded, color: AppColors.onYellow),
+                          child: Icon(note == null ? Icons.volume_up_rounded : Icons.arrow_forward_rounded,
+                              color: AppColors.onYellow, size: 20),
                         ),
                       ],
                     ),
@@ -417,6 +445,14 @@ class _SignOfTheDay extends StatelessWidget {
       ),
     );
   }
+}
+
+/// When and how long; the day is left out when the title already says it (the default title).
+String _detail(ListenNote note) {
+  final when = dayAndTime(note.startedAt);
+  final count = note.lines.length;
+  final length = '${durationLabel(note.duration)} · $count ${count == 1 ? 'sentence' : 'sentences'}';
+  return note.title.contains(when) ? length : '$when · $length';
 }
 
 /// Faint dot pattern (design: radial-gradient dots on .hx-daily).

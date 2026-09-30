@@ -42,7 +42,8 @@ void main() {
     expect(find.text('A real two-way talk'), findsOneWidget);
     await _tap(tester, 'Continue');
     expect(find.text('Built for your world'), findsOneWidget);
-    expect(find.textContaining('coming soon'), findsOneWidget, reason: 'no false promises');
+    expect(find.textContaining('notes of everything you listen to'), findsOneWidget);
+    expect(find.textContaining('coming soon'), findsNothing, reason: 'no promises: everything named is built');
     await _tap(tester, 'Get started');
 
     expect(find.text('Make SignSuara yours'), findsOneWidget);

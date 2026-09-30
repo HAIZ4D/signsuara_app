@@ -50,7 +50,8 @@ void main() {
     // Further down the page: scroll like on the phone.
     await tester.scrollUntilVisible(find.text('No conversations yet'), 200,
         scrollable: find.byType(Scrollable).first);
-    expect(find.text('SubhanAllah'), findsOneWidget);
+    expect(find.text('Your notes will appear here'), findsOneWidget, reason: 'the latest note card, before any note');
+    expect(find.text('No notes yet'), findsOneWidget, reason: 'the Notes tile');
     expect(find.text('No conversations yet'), findsOneWidget);
   });
 
@@ -62,9 +63,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 700));
     }
 
-    await openTab('Learn');
-    expect(find.text('Learn and sign the Arabic letters'), findsOneWidget);
-    expect(find.text('Coming soon'), findsOneWidget);
+    await openTab('Notes');
+    expect(find.text('What you listened to'), findsOneWidget);
+    expect(find.text('Go to Listen'), findsOneWidget);
 
     await openTab('Chat');
     expect(find.text('Conversation'), findsWidgets);

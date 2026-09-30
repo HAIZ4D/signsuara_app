@@ -13,9 +13,8 @@ import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/widgets/glass_chip.dart';
-import '../ui/widgets/gradient_button.dart';
 import '../ui/widgets/motion.dart';
-import '../ui/widgets/note_kind_icon.dart';
+import '../ui/widgets/note_sheet.dart';
 import '../ui/widgets/notice.dart';
 
 /// Listen (design: hearing.jsx): long listening, like a meeting, a class, a program or a
@@ -107,12 +106,7 @@ class _HearingScreenState extends State<HearingScreen> {
       messenger.showSnackBar(const SnackBar(content: Text('Nothing was heard, so nothing was saved.')));
       return;
     }
-    final decision = await showModalBottomSheet<_Decision>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => _SaveSheet(note: note),
-    );
+    final decision = await showNoteSheet(context, note);
     if (decision == null) {
       messenger.showSnackBar(SnackBar(content: Text('Saved as "${note.title}".')));
     } else if (decision.discard) {
@@ -857,179 +851,4 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_RingPainter old) => false;
-}
-
-/// What the save sheet decided: keep the note as [kind] with [title], or throw it away.
-class _Decision {
-  const _Decision.keep(this.kind, this.title) : discard = false;
-  const _Decision.discard()
-      : kind = NoteKind.other,
-        title = '',
-        discard = true;
-
-  final NoteKind kind;
-  final String title;
-  final bool discard;
-}
-
-/// After Stop: what was it (meeting, class...) and its title. Closing the sheet keeps the note as it is.
-class _SaveSheet extends StatefulWidget {
-  const _SaveSheet({required this.note});
-
-  final ListenNote note;
-
-  @override
-  State<_SaveSheet> createState() => _SaveSheetState();
-}
-
-class _SaveSheetState extends State<_SaveSheet> {
-  var _kind = NoteKind.meeting;
-  late final _title = TextEditingController(text: ListenSession.defaultTitle(_kind, widget.note.startedAt));
-  var _edited = false; // a typed title is not replaced when the kind changes
-
-  @override
-  void dispose() {
-    _title.dispose();
-    super.dispose();
-  }
-
-  void _pick(NoteKind kind) => setState(() {
-        _kind = kind;
-        if (!_edited) _title.text = ListenSession.defaultTitle(kind, widget.note.startedAt);
-      });
-
-  Future<void> _discard() async {
-    final sure = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Throw this recording away?'),
-        content: const Text('Everything heard in this session will be deleted.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep it')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Throw away')),
-        ],
-      ),
-    );
-    if (sure == true && mounted) Navigator.pop(context, const _Decision.discard());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final note = widget.note;
-    final minutes = note.duration.inMinutes;
-    final eyebrow = AppText.eyebrow.copyWith(color: AppColors.inkSoft);
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 5,
-                    decoration: BoxDecoration(color: AppColors.line, borderRadius: BorderRadius.circular(AppRadius.pill)),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.l),
-                Text('Save this listening', style: AppText.section.copyWith(fontSize: 20)),
-                const SizedBox(height: AppSpace.xs),
-                Text(
-                    '${note.lines.length} ${note.lines.length == 1 ? 'sentence' : 'sentences'} · '
-                    '${minutes < 1 ? 'under a minute' : '$minutes min'}',
-                    style: AppText.body.copyWith(color: AppColors.inkSoft)),
-                const SizedBox(height: AppSpace.xl),
-                Text('WHAT WAS IT?', style: eyebrow),
-                const SizedBox(height: AppSpace.s),
-                Wrap(
-                  spacing: AppSpace.s,
-                  runSpacing: AppSpace.s,
-                  children: [
-                    for (final kind in NoteKind.values)
-                      _KindChip(kind: kind, selected: kind == _kind, onTap: () => _pick(kind)),
-                  ],
-                ),
-                const SizedBox(height: AppSpace.xl),
-                Text('TITLE', style: eyebrow),
-                const SizedBox(height: AppSpace.s),
-                TextField(
-                  controller: _title,
-                  onChanged: (_) => _edited = true,
-                  textCapitalization: TextCapitalization.sentences,
-                  style: AppText.strong.copyWith(color: AppColors.ink),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: AppColors.surface2,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpace.xl),
-                GradientButton(
-                  label: 'Save note',
-                  icon: Icons.bookmark_added_rounded,
-                  onTap: () => Navigator.pop(context, _Decision.keep(_kind, _title.text)),
-                ),
-                const SizedBox(height: AppSpace.s),
-                TextButton(
-                  onPressed: _discard,
-                  child: Text('Throw it away', style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 14)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// One kind to choose in the save sheet.
-class _KindChip extends StatelessWidget {
-  const _KindChip({required this.kind, required this.selected, required this.onTap});
-
-  final NoteKind kind;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-        button: true,
-        selected: selected,
-        label: kind.label,
-        excludeSemantics: true,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const StadiumBorder(),
-            child: Ink(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              decoration: BoxDecoration(
-                gradient: selected ? AppGradients.turq : null,
-                color: selected ? null : AppColors.surface2,
-                borderRadius: BorderRadius.circular(AppRadius.pill),
-                boxShadow: selected ? AppShadows.turqTile : null,
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(noteKindIcon(kind), size: 17, color: selected ? AppColors.onDark : AppColors.turqDeep),
-                const SizedBox(width: 7),
-                Text(kind.label,
-                    style: AppText.label.copyWith(color: selected ? AppColors.onDark : AppColors.ink, fontSize: 13.5)),
-              ]),
-            ),
-          ),
-        ),
-      );
 }

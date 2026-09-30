@@ -37,8 +37,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         'Hearing friends reply by voice. SignSuara shows their words to you instantly, big and clear. '
             'No one is left out.'),
     _Page(_Art.terms, AppColors.turqBright, 'Built for your world',
-        'Bahasa Melayu and English, plus your own custom signs. '
-            'Islamic learning with the Arabic letters and PAFA is coming soon.'),
+        'Bahasa Melayu and English, your own custom signs, and notes of everything you listen to: '
+            'meetings, classes and consultations.'),
   ];
 
   final _controller = PageController();
