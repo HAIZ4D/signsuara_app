@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
 import 'package:flutter/foundation.dart';
 
 import '../listen/listen_note.dart';
@@ -12,6 +13,9 @@ import '../listen/note_summary.dart';
 class GeminiSummarizer implements Summarizer {
   /// One place for the model name (README "Listen and Notes").
   static const model = 'gemini-3.8-flash';
+
+  static const _notAllowed = 'Gemini did not accept this phone (App Check). Check the internet; if it '
+      "is on, add this phone's App Check debug token in the Firebase console.";
 
   // The answer's shape: the fields NoteSummary.fromJson reads.
   static final _schema = Schema.object(properties: {
@@ -51,9 +55,12 @@ class GeminiSummarizer implements Summarizer {
       throw const SummaryFailure('Too many summaries right now. Wait a minute and try again.');
     } on FirebaseAIException catch (e) {
       debugPrint('Gemini: $e');
+      if (e.message.contains('App Check')) throw const SummaryFailure(_notAllowed); // token refused
       throw const SummaryFailure('Gemini could not make the summary. Try again in a moment.');
     } catch (e) {
       debugPrint('Gemini: $e'); // no internet, mostly
+      // No App Check token for this phone: not added in the console, or no internet.
+      if (e is FirebaseException && e.plugin == 'firebase_app_check') throw const SummaryFailure(_notAllowed);
       throw const SummaryFailure('The summary needs the internet. Check the connection and try again.');
     }
   }

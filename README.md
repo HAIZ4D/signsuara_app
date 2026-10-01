@@ -337,9 +337,16 @@ Firebase project:
    asks for. It is paid per use on the Blaze plan, so also set a **budget with alerts** in Google
    Cloud Billing (for example RM10 a month). No API key goes in the app: Firebase AI Logic uses
    the app's own Firebase project. The model is one constant, `GeminiSummarizer.model`; Google
-   retires old Gemini models, so check that it is still offered. Keep App Check **enforcement**
-   for Firebase AI Logic **off** (App Check → APIs): the app does not use App Check yet, so with
-   enforcement on, Gemini refuses every summary ("Firebase App Check token is invalid").
+   retires old Gemini models, so check that it is still offered.
+8. **App Check** (only phones you allow may use Gemini; Gemini requires it): the app starts App
+   Check with its **debug provider** in every build, because it is not installed from Google Play
+   (where the Play Integrity provider would vouch for it). At its first start on a phone, the log
+   shows `Firebase App Check debug token: <token>` and a link to the right console page
+   (`flutter run` output, or `adb logcat | grep "App Check debug token"`). Add that token in the
+   Firebase console → App Check → Apps → the Android app → ⋮ → **Manage debug tokens**. The token
+   stays the same while the app stays installed; uninstalling it or clearing its data makes a new
+   one. Debug tokens are secrets: never commit them. Without an added token, Gemini refuses the
+   phone ("Firebase App Check token is invalid"), and the app says so.
 
 Saved per user:
 - `users/{uid}`: name, email, photo link, first and last sign-in time, `username` when the name
@@ -386,9 +393,8 @@ never hardcodes the labels, the number of classes or the window size.
   clearly different.
 - Summaries need internet, and Gemini can make mistakes or miss something (the transcript always
   stays).
-- Firebase App Check is not set up yet, so someone who copies the app's Firebase settings could use
-  Gemini on the project's bill; the budget alert limits that. App Check is the next hardening
-  step.
+- App Check uses the debug provider (the app is not on Google Play), so every phone that should use
+  Gemini needs its token added in the console once (see "Firebase setup", step 8).
 
 ## Packages and licences
 
@@ -402,7 +408,8 @@ never hardcodes the labels, the number of classes or the window size.
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
 | `google_sign_in` | Google account picker | BSD-3-Clause |
 | `firebase_storage` | profile photos | BSD-3-Clause |
-| `firebase_ai` | Gemini summaries of notes (Firebase AI Logic); it brings `firebase_app_check` (BSD-3-Clause), not used yet | Apache-2.0 |
+| `firebase_ai` | Gemini summaries of notes (Firebase AI Logic) | Apache-2.0 |
+| `firebase_app_check` | App Check: proves requests come from this app on an allowed phone | BSD-3-Clause |
 | `image_picker` | take or choose a profile photo | Apache-2.0 / BSD-3-Clause |
 | BIM signer character | "FREE MODEL 青髪三つ編みメガネっ子" by 水銀メイド (VRoid Hub); only rendered clips are included | VRoid Hub conditions set by the author (credit required, no redistribution of the model) |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

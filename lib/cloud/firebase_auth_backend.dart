@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -18,8 +19,8 @@ import 'firestore_note_store.dart';
 import 'gemini_summarizer.dart';
 
 /// Google sign-in through Firebase: the ONLY file using firebase_core, firebase_auth,
-/// google_sign_in and firebase_storage (profile photos). Firestore is used here for the profile,
-/// and in firestore_history_store.dart and firestore_gesture_store.dart.
+/// google_sign_in, firebase_storage (profile photos) and firebase_app_check. Firestore is used here
+/// for the profile, and in firestore_history_store.dart and firestore_gesture_store.dart.
 /// Settings come from android/app/google-services.json (see README "Firebase setup").
 class FirebaseAuthBackend implements AuthBackend {
   FirebaseAuthBackend._();
@@ -28,10 +29,23 @@ class FirebaseAuthBackend implements AuthBackend {
   static Future<FirebaseAuthBackend?> start() async {
     try {
       await Firebase.initializeApp();
-      return FirebaseAuthBackend._();
     } catch (e) {
       debugPrint('Firebase not available: $e');
       return null;
+    }
+    await _startAppCheck();
+    return FirebaseAuthBackend._();
+  }
+
+  // App Check proves to Firebase that a request comes from this app on a phone added in the
+  // console; Gemini refuses requests without it (README "Firebase setup", step 8). The debug
+  // provider is used in every build: the app is not on Google Play, so Play Integrity can't vouch
+  // for it. Each phone prints its debug token in its log, to be added in the console once.
+  static Future<void> _startAppCheck() async {
+    try {
+      await FirebaseAppCheck.instance.activate(providerAndroid: const AndroidDebugProvider());
+    } catch (e) {
+      debugPrint('App Check not started: $e'); // the rest of Firebase works without it
     }
   }
 
