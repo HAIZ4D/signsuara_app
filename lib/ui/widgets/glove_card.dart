@@ -9,10 +9,11 @@ import 'brand.dart';
 /// The glove status card on the dark hero (design: .hx-glove). Real status only (no battery:
 /// the glove can't measure it). Replaces the old pairing screen: connect / disconnect from here.
 class GloveCard extends StatelessWidget {
-  const GloveCard({super.key, required this.session, required this.ble});
+  const GloveCard({super.key, required this.session, required this.ble, this.lastSign});
 
   final GloveSession session;
   final GloveBle ble;
+  final String? lastSign; // the words of the last sign spoken, shown while connected (Home)
 
   @override
   Widget build(BuildContext context) {
@@ -30,6 +31,7 @@ class GloveCard extends StatelessWidget {
         : link == GloveLink.disconnected && session.status == 'Not connected'
             ? 'Tap Connect to start'
             : session.status;
+    final said = connected && !sensorLost ? lastSign : null;
 
     return Semantics(
       container: true,
@@ -47,10 +49,17 @@ class GloveCard extends StatelessWidget {
             const Positioned(top: -11, left: 14, right: 14, child: _FlagLine()),
             Row(
               children: [
-                Container(
+                // Connected: a turquoise glow around the hand, which moves with the real fingers.
+                AnimatedContainer(
+                  duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.medium,
                   width: 62,
                   height: 62,
-                  decoration: BoxDecoration(color: AppColors.well, borderRadius: BorderRadius.circular(18)),
+                  decoration: BoxDecoration(
+                    color: AppColors.well,
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: connected ? AppColors.turqBright : AppColors.glassBorder, width: 1.5),
+                    boxShadow: connected ? AppShadows.turqTile : null,
+                  ),
                   alignment: Alignment.center,
                   child: HandSensor(bends: fingerBend(session.lastRow), active: connected, size: 50),
                 ),
@@ -66,12 +75,23 @@ class GloveCard extends StatelessWidget {
                       ]),
                       const SizedBox(height: 2),
                       Text('SignSuara Glove', style: AppText.strong.copyWith(color: AppColors.onDark, fontSize: 15.5)),
-                      Text(
-                        detail,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppText.small.copyWith(color: sensorLost ? AppColors.danger : AppColors.onDarkSoft),
-                      ),
+                      if (said != null)
+                        Text.rich(
+                          TextSpan(children: [
+                            const TextSpan(text: 'Last sign: '),
+                            TextSpan(text: said, style: const TextStyle(color: AppColors.yellow, fontWeight: FontWeight.w800)),
+                          ]),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.small.copyWith(color: AppColors.onDarkSoft),
+                        )
+                      else
+                        Text(
+                          detail,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.small.copyWith(color: sensorLost ? AppColors.danger : AppColors.onDarkSoft),
+                        ),
                     ],
                   ),
                 ),

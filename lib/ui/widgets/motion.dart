@@ -62,6 +62,59 @@ class _AuroraState extends State<Aurora> with SingleTickerProviderStateMixin {
   }
 }
 
+/// A few stars twinkling on the dark header in the evening (Home): fixed places, each with its own
+/// rhythm. Still when motion is reduced.
+class NightSky extends StatefulWidget {
+  const NightSky({super.key});
+
+  @override
+  State<NightSky> createState() => _NightSkyState();
+}
+
+class _NightSkyState extends State<NightSky> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: const Duration(seconds: 6));
+  // Where each star is (shares of the panel, upper part), its size and when it twinkles.
+  late final _stars = [
+    for (var i = 0; i < 14; i++)
+      (x: Random(i * 31 + 7).nextDouble(), y: Random(i * 17 + 3).nextDouble() * 0.7, size: 1.1 + (i % 4) * 0.45, phase: i / 14),
+  ];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      IgnorePointer(child: RepaintBoundary(child: CustomPaint(painter: _StarsPainter(_stars, _c))));
+}
+
+class _StarsPainter extends CustomPainter {
+  _StarsPainter(this.stars, this.time) : super(repaint: time);
+
+  final List<({double x, double y, double size, double phase})> stars;
+  final Animation<double> time;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final star in stars) {
+      final twinkle = (sin(2 * pi * (time.value * 2 + star.phase)) + 1) / 2; // two twinkles a cycle
+      final paint = Paint()..color = AppColors.onDark.withValues(alpha: 0.12 + 0.6 * twinkle * twinkle);
+      canvas.drawCircle(Offset(star.x * size.width, star.y * size.height), star.size, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StarsPainter old) => false; // repaints with its animation
+}
+
 /// A band of light that sweeps across a card every few seconds (design: hxShine).
 class ShineSweep extends StatefulWidget {
   const ShineSweep({super.key, this.strength = 0.28});

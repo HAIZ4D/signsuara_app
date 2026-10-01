@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
+import '../glove/glove_session.dart';
 import '../listen/listen_note.dart';
 import '../theme/app_theme.dart';
 import '../ui/time_label.dart';
@@ -11,6 +12,7 @@ import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
 import '../ui/widgets/note_kind_icon.dart';
 import '../ui/widgets/user_avatar.dart';
+import '../ui/widgets/voice_ribbon.dart';
 import 'history_screen.dart';
 import 'note_screen.dart';
 
@@ -30,7 +32,16 @@ class HomeScreen extends StatelessWidget {
       value: SystemUiOverlayStyle.light,
       child: ListenableBuilder(
         listenable: services.changes,
-        builder: (context, _) => ListView(
+        builder: (context, _) {
+          // The voice line follows the glove; it bursts when a sign is spoken (README "Home").
+          final energy = switch (services.session.link) {
+            GloveLink.connected => 1.0,
+            GloveLink.busy => 0.55,
+            GloveLink.disconnected => 0.2,
+          };
+          final lastSigned = [for (final m in services.log.messages) if (m.label != null) m].lastOrNull;
+          final lastSign = lastSigned == null ? null : services.words(lastSigned.label!).shown(services.speaker.language);
+          return ListView(
           padding: EdgeInsets.only(bottom: AppSpace.navClearance(context)),
           children: [
             Stack(
@@ -38,18 +49,21 @@ class HomeScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: _StartCta.height - 40),
                   child: HeroPanel(
+                    backdrop: timeGreeting(DateTime.now()) == 'Good evening' ? const NightSky() : null,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        _Greeting(
+                            name: services.userName, photoUrl: services.account.user?.photoUrl, onAvatar: onOpenProfile),
+                        const SizedBox(height: AppSpace.xs),
                         FadeUp(
-                          child: _Greeting(
-                              name: services.userName,
-                              photoUrl: services.account.user?.photoUrl,
-                              onAvatar: onOpenProfile)),
-                        const SizedBox(height: AppSpace.xl),
+                          delay: const Duration(milliseconds: 220),
+                          child: VoiceRibbon(energy: energy, burst: lastSigned, height: 64),
+                        ),
+                        const SizedBox(height: AppSpace.s),
                         FadeUp(
-                          delay: const Duration(milliseconds: 100),
-                          child: GloveCard(session: services.session, ble: services.ble),
+                          delay: const Duration(milliseconds: 280),
+                          child: GloveCard(session: services.session, ble: services.ble, lastSign: lastSign),
                         ),
                       ],
                     ),
@@ -69,14 +83,13 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Expanded(
                     child: FadeUp(
-                      delay: const Duration(milliseconds: 50),
+                      delay: const Duration(milliseconds: 380),
                       child: _Tile(
                         icon: Icons.volume_up_rounded,
                         title: 'Listen',
                         subtitle: 'See what they say',
-                        gradient: AppGradients.sun,
-                        shadow: AppShadows.sunGlow,
-                        iconColor: AppColors.onYellow,
+                        wash: AppColors.yellowWash,
+                        ink: AppColors.onYellowInk,
                         onTap: () => onOpenTab(hearingTab),
                       ),
                     ),
@@ -84,13 +97,13 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FadeUp(
-                      delay: const Duration(milliseconds: 120),
+                      delay: const Duration(milliseconds: 420),
                       child: _Tile(
                         icon: Icons.waving_hand_rounded,
                         title: 'My signs',
                         subtitle: '${services.gestures.all.length} custom',
-                        gradient: AppGradients.turq,
-                        shadow: AppShadows.turqTile,
+                        wash: AppColors.turqWash,
+                        ink: AppColors.turqInk,
                         onTap: () => onOpenTab(gesturesTab),
                       ),
                     ),
@@ -98,7 +111,7 @@ class HomeScreen extends StatelessWidget {
                   const SizedBox(width: 10),
                   Expanded(
                     child: FadeUp(
-                      delay: const Duration(milliseconds: 190),
+                      delay: const Duration(milliseconds: 460),
                       child: _Tile(
                         icon: Icons.sticky_note_2_rounded,
                         title: 'Notes',
@@ -107,8 +120,8 @@ class HomeScreen extends StatelessWidget {
                           1 => '1 note',
                           final n => '$n notes',
                         },
-                        gradient: AppGradients.blueTile,
-                        shadow: AppShadows.blueTile,
+                        wash: AppColors.blueWash,
+                        ink: AppColors.royal,
                         onTap: () => onOpenTab(notesTab),
                       ),
                     ),
@@ -118,10 +131,13 @@ class HomeScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 14, AppSpace.gutter, 0),
-              child: _LatestNote(
-                note: services.notes.all.firstOrNull,
-                onOpen: (note) => openNote(context, services, note),
-                onListen: () => onOpenTab(hearingTab),
+              child: FadeUp(
+                delay: const Duration(milliseconds: 500),
+                child: _LatestNote(
+                  note: services.notes.all.firstOrNull,
+                  onOpen: (note) => openNote(context, services, note),
+                  onListen: () => onOpenTab(hearingTab),
+                ),
               ),
             ),
             SectionHeader(
@@ -132,10 +148,11 @@ class HomeScreen extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpace.gutter),
-              child: _Recent(services: services),
+              child: FadeUp(delay: const Duration(milliseconds: 540), child: _Recent(services: services)),
             ),
           ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -152,6 +169,7 @@ class _Greeting extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final date = longDate(now);
+    // Line by line: the date, the greeting, then the name.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -159,19 +177,22 @@ class _Greeting extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(date, style: AppText.label.copyWith(color: AppColors.onDarkSoft)),
+              FadeUp(child: Text(date, style: AppText.label.copyWith(color: AppColors.onDarkSoft))),
               const SizedBox(height: 6),
-              Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: '${timeGreeting(now)},\n'),
-                  TextSpan(text: name, style: const TextStyle(color: AppColors.yellow)),
-                ]),
-                style: AppText.heroTitle,
+              FadeUp(
+                delay: const Duration(milliseconds: 80),
+                child: Text('${timeGreeting(now)},', style: AppText.heroTitle),
+              ),
+              FadeUp(
+                delay: const Duration(milliseconds: 160),
+                child: Text(name, style: AppText.heroTitle.copyWith(color: AppColors.yellow)),
               ),
             ],
           ),
         ),
-        Semantics(
+        FadeUp(
+          delay: const Duration(milliseconds: 120),
+          child: Semantics(
           button: true,
           label: 'Profile',
           excludeSemantics: true, // just "Profile", not the letter inside the avatar
@@ -198,6 +219,7 @@ class _Greeting extends StatelessWidget {
               ],
             ),
           ),
+          ),
         ),
       ],
     );
@@ -214,7 +236,7 @@ class _StartCta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FadeUp(
-      delay: const Duration(milliseconds: 200),
+      delay: const Duration(milliseconds: 340),
       child: Semantics(
         button: true,
         label: 'Start a conversation',
@@ -290,23 +312,22 @@ class _StartCta extends StatelessWidget {
   }
 }
 
+/// A shortcut to a tab: its icon on a pale wash of its colour, a name, and a real detail.
 class _Tile extends StatelessWidget {
   const _Tile({
     required this.icon,
     required this.title,
     required this.subtitle,
-    required this.gradient,
-    required this.shadow,
+    required this.wash,
+    required this.ink,
     required this.onTap,
-    this.iconColor = AppColors.onDark,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
-  final Gradient gradient;
-  final List<BoxShadow> shadow;
-  final Color iconColor;
+  final Color wash;
+  final Color ink;
   final VoidCallback onTap;
 
   @override
@@ -331,18 +352,14 @@ class _Tile extends StatelessWidget {
                   Container(
                     width: 42,
                     height: 42,
-                    decoration: BoxDecoration(
-                      gradient: gradient,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: shadow,
-                    ),
-                    child: Icon(icon, size: 22, color: iconColor),
+                    decoration: BoxDecoration(color: wash, borderRadius: BorderRadius.circular(14)),
+                    child: Icon(icon, size: 22, color: ink),
                   ),
                   const SizedBox(height: 10),
                   Text(title,
                       maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14)),
                   Text(subtitle,
-                      maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.small.copyWith(color: AppColors.inkFaint, fontSize: 11.5)),
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.small.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
                 ],
               ),
             ),

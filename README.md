@@ -22,6 +22,11 @@ Universiti Putra Malaysia (UPM).
 - **Profile & settings**: your name and photo (change them when signed in), glove connection, speech
   language, voice test, conversation history (count, clear all), gesture backup (check now),
   Google account, about and licences. Home greets you by time of day ("Good morning", …).
+- **Home** (`lib/screens/home_screen.dart`): under the greeting, a **voice line**
+  (`lib/ui/widgets/voice_ribbon.dart`, three glowing waves in the Deaf Flag colours) follows the
+  glove: calm while it is off, livelier while it is connected, and a burst each time a sign is
+  spoken; the glove card then shows the last sign. In the evening a few stars twinkle in the
+  header. Every animation stands still when the phone's "remove animations" setting is on.
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -292,7 +297,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 186 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 189 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

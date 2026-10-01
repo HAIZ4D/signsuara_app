@@ -5,10 +5,11 @@ import 'motion.dart';
 
 /// Dark-blue header panel with drifting colour blobs and round bottom corners (design: .hx-hero).
 class HeroPanel extends StatelessWidget {
-  const HeroPanel({super.key, required this.child, this.bottomPadding = 64});
+  const HeroPanel({super.key, required this.child, this.bottomPadding = 64, this.backdrop});
 
   final Widget child;
   final double bottomPadding;
+  final Widget? backdrop; // over the colour blobs, under the content (Home's evening stars)
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +20,7 @@ class HeroPanel extends StatelessWidget {
         child: Stack(
           children: [
             const Positioned.fill(child: Aurora()),
+            if (backdrop case final backdrop?) Positioned.fill(child: backdrop),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 AppSpace.xl,
