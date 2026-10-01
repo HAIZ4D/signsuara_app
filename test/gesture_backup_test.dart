@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:signsuara_app/cloud/account.dart';
@@ -93,6 +95,33 @@ void main() {
     expect(cloud().saved, isEmpty);
   });
 
+  test('the category is saved on the phone; gestures from before categories are Personal', () {
+    final g = _gesture('8', 'Atom').copyWith(category: GestureCategory.science);
+    final back = CustomGesture.fromJson(jsonDecode(jsonEncode(g.toJson())) as Map<String, dynamic>);
+    expect(back.category, GestureCategory.science);
+    expect(back.recordings, g.recordings);
+    final old = g.toJson()..remove('category');
+    expect(CustomGesture.fromJson(jsonDecode(jsonEncode(old)) as Map<String, dynamic>).category, GestureCategory.personal);
+  });
+
+  test('a changed category goes up again; an older backup without one reads as Personal', () async {
+    backend.currentUser = testUser;
+    started(Account(backend));
+    await pumpEventQueue();
+    await gestures.add(_gesture('5', 'Solat'));
+    await pumpEventQueue();
+    expect(cloud().saved['5']!['category'], 'personal');
+
+    await gestures.update(gestures.all.single.copyWith(category: GestureCategory.religious));
+    await pumpEventQueue();
+    expect(cloud().saved['5']!['category'], 'religious', reason: 'uploaded again');
+    expect(gestures.all.single.category, GestureCategory.religious);
+    expect(gestures.all.single.recordings, _gesture('5', 'Solat').recordings, reason: 'only the category changed');
+
+    final older = gestureToBackup(_gesture('6', 'Lama'))..remove('category');
+    expect(gestureFromBackup('6', older)!.category, GestureCategory.personal);
+  });
+
   test('when the backup fails, the gestures stay on the phone and it says so', () async {
     cloud().failing = true;
     backend.currentUser = testUser;
@@ -119,6 +148,7 @@ void main() {
     });
     await tester.pump(const Duration(milliseconds: 700));
     expect(find.text('Backed up to your Google account. 1 brought back from it.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Zad'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Zad'), findsOneWidget);
   });
 }

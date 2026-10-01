@@ -15,14 +15,23 @@ import '../ui/widgets/gradient_button.dart';
 import '../ui/widgets/notice.dart';
 import 'custom_gesture.dart';
 import 'custom_gestures.dart';
+import 'gesture_category_ui.dart';
 
-/// Create a custom gesture: phrase + Still/Moving, then 5 recordings of 3 s (like record_v2.py).
+/// Create a custom gesture: phrase, category and Still/Moving, then 5 recordings of 3 s (like
+/// record_v2.py).
 class RecordGesturePage extends StatefulWidget {
-  const RecordGesturePage({super.key, required this.gestures, required this.session, this.ble});
+  const RecordGesturePage({
+    super.key,
+    required this.gestures,
+    required this.session,
+    this.ble,
+    this.category = GestureCategory.personal,
+  });
 
   final CustomGestures gestures;
   final GloveSession session;
   final GloveBle? ble; // optional: lets the page offer a Connect button
+  final GestureCategory category; // chosen first (e.g. the category the Gestures tab shows)
 
   @override
   State<RecordGesturePage> createState() => _RecordGesturePageState();
@@ -32,6 +41,7 @@ class _RecordGesturePageState extends State<RecordGesturePage> {
   final _malay = TextEditingController();
   final _english = TextEditingController();
   var _moving = false;
+  late var _category = widget.category;
 
   var _recording = false;
   var _message = '';
@@ -135,6 +145,7 @@ class _RecordGesturePageState extends State<RecordGesturePage> {
       malay: _malay.text.trim(),
       english: _english.text.trim(),
       moving: _moving,
+      category: _category,
       recordings: List.of(_recordings),
     );
     final similar = widget.gestures.matcher.tooSimilarTo(gesture);
@@ -219,6 +230,10 @@ class _RecordGesturePageState extends State<RecordGesturePage> {
           style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 16),
           decoration: _field('Phrase in English (optional)', 'I am hungry'),
         ),
+        const SizedBox(height: 20),
+        Text('What is it about?', style: AppText.label.copyWith(color: AppColors.inkSoft)),
+        const SizedBox(height: 8),
+        CategoryPicker(selected: _category, onSelect: (category) => setState(() => _category = category)),
         const SizedBox(height: 20),
         Text('How is it signed?', style: AppText.label.copyWith(color: AppColors.inkSoft)),
         const SizedBox(height: 8),
@@ -445,21 +460,28 @@ class _KindOption extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            // Chosen: filled, like the category picker above it.
             child: AnimatedContainer(
-              duration: AppMotion.fast,
-              padding: const EdgeInsets.all(AppSpace.m),
+              duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.fast,
+              padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
               decoration: BoxDecoration(
-                color: selected ? AppColors.turq.withValues(alpha: 0.1) : AppColors.surface2,
+                color: selected ? AppColors.turqDeep : AppColors.surface2,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: selected ? AppColors.turq : AppColors.line, width: 1.5),
+                border: Border.all(color: selected ? AppColors.turqDeep : AppColors.line, width: 1.5),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, color: selected ? AppColors.turq : AppColors.inkFaint),
-                  const SizedBox(height: 6),
-                  Text(title, style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14.5)),
-                  Text(subtitle, style: AppText.small.copyWith(color: AppColors.inkFaint)),
+                  Row(children: [
+                    Icon(icon, size: 20, color: selected ? AppColors.onDark : AppColors.turqDeep),
+                    const Spacer(),
+                    if (selected) const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.onDark),
+                  ]),
+                  const SizedBox(height: AppSpace.s),
+                  Text(title,
+                      style: AppText.strong.copyWith(color: selected ? AppColors.onDark : AppColors.ink, fontSize: 14.5)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: AppText.small.copyWith(color: selected ? AppColors.onDark : AppColors.inkSoft)),
                 ],
               ),
             ),

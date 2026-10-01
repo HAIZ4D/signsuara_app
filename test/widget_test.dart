@@ -77,7 +77,7 @@ void main() {
     expect(find.bySemanticsLabel('Start listening'), findsOneWidget);
 
     await openTab('Gestures');
-    expect(find.textContaining('No custom gestures yet'), findsOneWidget);
+    expect(find.text('My Gestures'), findsOneWidget);
 
     await openTab('Home');
     expect(find.text('Sign it, and be heard'), findsOneWidget);
@@ -124,7 +124,8 @@ void main() {
     expect(find.text('Saya lapar'), findsOneWidget);
     expect(find.text('I am hungry'), findsOneWidget);
     expect(find.text('Still'), findsOneWidget);
-    expect(find.byTooltip('Delete'), findsOneWidget);
+    expect(find.text('Personal'), findsWidgets, reason: 'its category (a gesture from before categories)');
+    expect(find.byTooltip('More for Saya lapar'), findsOneWidget, reason: 'change category, delete');
   });
 
   testWidgets('New gesture: recording needs a Malay phrase and a connected glove', (tester) async {

@@ -24,6 +24,9 @@ class CustomGestures extends ChangeNotifier {
 
   Future<void> remove(String id) => _save([for (final g in _all) if (g.id != id) g]);
 
+  /// Saves a changed gesture (its category) in the same place in the list.
+  Future<void> update(CustomGesture gesture) => _save([for (final g in _all) g.id == gesture.id ? gesture : g]);
+
   /// Words for a custom label (`custom:<id>`), or null when it is not a custom gesture.
   SignWords? customWords(String label) {
     for (final g in _all) {

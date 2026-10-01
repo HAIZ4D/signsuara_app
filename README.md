@@ -168,6 +168,17 @@ of the chat or its history.
   its own recordings **and** (2) closer to its own recordings than to **any** built-in training
   example, including Rest (`lib/custom/reference_bank.dart`, generated from the training data).
 - The app warns when a new gesture looks like a built-in sign.
+- **Categories** (`GestureCategory` in `lib/custom/custom_gesture.dart`): BIM often has no sign for
+  religious, scientific or technical words, which is where custom gestures help most, so each
+  gesture is **Religious**, **Science**, **Technical** or **Personal**. It is chosen when recording
+  (`lib/custom/gesture_category_ui.dart`) and can be changed later; it only sorts the gestures
+  (recognition does not use it). Gestures saved before categories existed are Personal.
+- **The Gestures tab** (`lib/custom/custom_gestures_page.dart`): real numbers (your signs, built-in
+  signs), "Record a new gesture", the four categories with how many gestures each has (a tap shows
+  only that category; an empty one offers to record a gesture straight into it), and each gesture
+  like a dictionary entry: the Malay phrase, its English, its category and Still or Moving. ⋮
+  changes the category or deletes the gesture (after asking). The built-in signs are listed at the
+  end, as a reminder to make custom gestures clearly different.
 
 Validation on the real recordings (`tools/eval_custom_matcher.py`): each built-in sign pretends
 to be a new custom gesture, enrolled from 5 random recordings, 20 trials, with live replay of all
@@ -281,7 +292,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 180 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 186 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -378,12 +389,13 @@ Saved per user:
   `{text, at}` (one per sentence heard); after Summarise also `summary`: `overview`, the lists
   `keyPoints`, `actions`, `details` and `terms` (`{term, meaning}`), `madeAt` and `model`, and
   `done` (the numbers of the actions ticked off) once something is ticked.
-- `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `savedAt` and `recordings` (the raw
+- `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `category` (religious, science,
+  technical or personal; missing in older backups = personal), `savedAt` and `recordings` (the raw
   recordings as one JSON text, because Firestore can't store lists inside lists).
   The list on the phone is the one the app uses; the account keeps a copy
   (`lib/custom/gesture_backup.dart`): at sign-in, gestures only in the account are added to the
   phone and gestures only on the phone are uploaded; while signed in, every new gesture is
-  uploaded and every deleted one removed. While signed out nothing is copied, so a gesture
+  uploaded (again when its category changes) and every deleted one removed. While signed out nothing is copied, so a gesture
   deleted then comes back at the next sign-in.
 
 Without an account (guest) nothing is saved in Firebase: conversations and notes are kept only

@@ -4,6 +4,19 @@ import '../ml/features.dart';
 import '../ml/signsuara_model.dart';
 import '../speech/sign_words.dart';
 
+/// What a custom gesture is about (README "Custom gestures"): the words BIM lacks are often
+/// religious, scientific or technical. Only for sorting; recognition does not use it.
+enum GestureCategory {
+  religious('Religious'),
+  science('Science'),
+  technical('Technical'),
+  personal('Personal');
+
+  const GestureCategory(this.label);
+
+  final String label;
+}
+
 /// A gesture recorded on the phone, with its own phrase (see "Custom gestures" in README.md).
 class CustomGesture {
   const CustomGesture({
@@ -12,6 +25,7 @@ class CustomGesture {
     this.english = '',
     required this.moving,
     required this.recordings,
+    this.category = GestureCategory.personal,
   });
 
   static const recordingsNeeded = 5;
@@ -23,18 +37,30 @@ class CustomGesture {
   final String english; // may be empty: then the Malay text is used
   final bool moving;
   final List<List<List<double>>> recordings; // raw glove rows (11 values), saved as-is
+  final GestureCategory category;
 
   String get label => '$labelPrefix$id';
   SignWords get words => SignWords(malay, english.isEmpty ? malay : english);
 
-  Map<String, Object> toJson() =>
-      {'id': id, 'malay': malay, 'english': english, 'moving': moving, 'recordings': recordings};
+  CustomGesture copyWith({GestureCategory? category}) => CustomGesture(
+      id: id, malay: malay, english: english, moving: moving, recordings: recordings, category: category ?? this.category);
+
+  Map<String, Object> toJson() => {
+        'id': id,
+        'malay': malay,
+        'english': english,
+        'moving': moving,
+        'category': category.name,
+        'recordings': recordings,
+      };
 
   factory CustomGesture.fromJson(Map<String, dynamic> json) => CustomGesture(
         id: json['id'] as String,
         malay: json['malay'] as String,
         english: json['english'] as String? ?? '',
         moving: json['moving'] as bool,
+        // Gestures saved before categories existed are Personal.
+        category: GestureCategory.values.asNameMap()[json['category']] ?? GestureCategory.personal,
         recordings: [
           for (final rec in json['recordings'] as List)
             [

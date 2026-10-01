@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../cloud/account.dart';
+import 'custom_gesture.dart';
 import 'custom_gestures.dart';
 import 'gesture_store.dart';
 
@@ -10,7 +11,8 @@ enum BackupState { off, checking, done, failed }
 /// a reinstall or on a new phone. The list on the phone stays the one the app uses.
 /// - Signing in (or opening the app signed in): gestures only in the account are added to the
 ///   phone, gestures only on the phone are uploaded.
-/// - While signed in: every new gesture is uploaded, every deleted one removed from the account.
+/// - While signed in: every new or changed (category) gesture is uploaded, every deleted one
+///   removed from the account.
 /// - While signed out nothing is copied (a gesture deleted then comes back at the next sign-in).
 class GestureBackup extends ChangeNotifier {
   GestureBackup({required this.gestures, required this.account});
@@ -19,7 +21,7 @@ class GestureBackup extends ChangeNotifier {
   final Account account;
 
   GestureStore? _store;
-  var _inAccount = <String>{}; // gesture ids the account has
+  var _inAccount = <String, GestureCategory>{}; // what the account has: each gesture's id and category
   var _synced = false; // the first comparison is done: now phone changes are copied
   var _state = BackupState.off;
   var _restored = 0;
@@ -79,7 +81,7 @@ class GestureBackup extends ChangeNotifier {
     try {
       final saved = await store.loadAll();
       if (!identical(store, _store)) return; // signed out meanwhile
-      _inAccount = {for (final g in saved) g.id};
+      _inAccount = {for (final g in saved) g.id: g.category};
       final onPhone = {for (final g in gestures.all) g.id};
       final missing = [for (final g in saved) if (!onPhone.contains(g.id)) g];
       _synced = true;
@@ -96,15 +98,17 @@ class GestureBackup extends ChangeNotifier {
     }
   }
 
-  /// Copies each change on the phone: new gestures up, deleted ones out of the account.
+  /// Copies each change on the phone: new or changed gestures up, deleted ones out of the account.
   void _mirror() {
     final store = _store;
     if (store == null || !_synced) return;
     final onPhone = {for (final g in gestures.all) g.id: g};
     for (final g in onPhone.values) {
-      if (_inAccount.add(g.id)) store.save(g).catchError(_fail);
+      if (_inAccount[g.id] == g.category) continue; // the account has it as it is
+      _inAccount[g.id] = g.category;
+      store.save(g).catchError(_fail);
     }
-    for (final id in _inAccount.difference(onPhone.keys.toSet())) {
+    for (final id in _inAccount.keys.toSet().difference(onPhone.keys.toSet())) {
       _inAccount.remove(id);
       store.delete(id).catchError(_fail);
     }

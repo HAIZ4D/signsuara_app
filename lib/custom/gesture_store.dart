@@ -18,6 +18,7 @@ Map<String, Object?> gestureToBackup(CustomGesture gesture) => {
       'malay': gesture.malay,
       'english': gesture.english,
       'moving': gesture.moving,
+      'category': gesture.category.name,
       'recordings': jsonEncode(gesture.recordings),
       'savedAt': DateTime.now(),
     };
@@ -30,6 +31,7 @@ CustomGesture? gestureFromBackup(String id, Map<String, Object?> backup) {
       'malay': backup['malay'],
       'english': backup['english'],
       'moving': backup['moving'],
+      'category': backup['category'], // missing in older backups: Personal
       'recordings': jsonDecode(backup['recordings'] as String),
     });
   } catch (_) {
