@@ -344,6 +344,81 @@ class _FlowDotsState extends State<FlowDots> with SingleTickerProviderStateMixin
       );
 }
 
+/// A border whose colours slowly turn around a rounded card (the Listen stage, the Summarise card).
+/// Only the edge is painted: spinning a big gradient behind the card looked the same but made the
+/// graphics chip fill millions of pixels in every frame (README "Smoothness"). Still when motion is
+/// reduced.
+class TurningBorder extends StatefulWidget {
+  const TurningBorder({
+    super.key,
+    required this.radius,
+    this.width = 2,
+    this.period = const Duration(seconds: 6),
+    this.gradient = AppGradients.stageBorder,
+  });
+
+  final double radius; // of the card's outer edge
+  final double width;
+  final Duration period;
+  final SweepGradient gradient;
+
+  @override
+  State<TurningBorder> createState() => _TurningBorderState();
+}
+
+class _TurningBorderState extends State<TurningBorder> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: widget.period);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    AppMotion.reduced(context) ? _c.stop() : _c.repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => IgnorePointer(
+        child: RepaintBoundary(
+          child: CustomPaint(painter: _TurningBorderPainter(_c, widget.radius, widget.width, widget.gradient)),
+        ),
+      );
+}
+
+class _TurningBorderPainter extends CustomPainter {
+  _TurningBorderPainter(this.turn, this.radius, this.width, this.gradient) : super(repaint: turn);
+
+  final Animation<double> turn;
+  final double radius;
+  final double width;
+  final SweepGradient gradient;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final colours = SweepGradient(
+      colors: gradient.colors,
+      stops: gradient.stops,
+      transform: GradientRotation(2 * pi * turn.value),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(width / 2), Radius.circular(radius - width / 2)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = width
+        ..shader = colours.createShader(rect),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TurningBorderPainter old) =>
+      old.radius != radius || old.width != width || old.gradient != gradient;
+}
+
 /// Slowly turns its child forever (design: hmSpin / conic borders). Still when motion is reduced.
 class Spin extends StatefulWidget {
   const Spin({super.key, required this.child, this.period = const Duration(seconds: 6), this.active = true});

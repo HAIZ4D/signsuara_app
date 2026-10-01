@@ -10,7 +10,7 @@ class Signer extends ChangeNotifier {
   Signer({SignTranslator? translator, Future<SignClipLibrary>? library, SignPlayer? player})
       : translator = translator ?? SignTranslator(),
         player = player ?? SignPlayer() {
-    this.player.addListener(notifyListeners);
+    this.player.addListener(_onPlayer);
     (library ?? SignClipLibrary.fromAssets()).then(_useLibrary);
   }
 
@@ -44,6 +44,18 @@ class Signer extends ChangeNotifier {
 
   bool get slow => player.speed < 1;
   void toggleSlow() => player.speed = slow ? 1 : 0.5;
+
+  // The player reports every new picture (its view listens to it directly); the screens only need
+  // to hear when what they show changes: signing or not, which sign, the speed. Passing on every
+  // picture rebuilt the whole app 24 times a second while she signed (README "Smoothness").
+  (bool, int, double)? _told;
+
+  void _onPlayer() {
+    final now = (signing, player.index, player.speed);
+    if (now == _told) return;
+    _told = now;
+    notifyListeners();
+  }
 
   /// Signs [sentence]. The same sentence again does not start over (that is [replay]).
   void show(String sentence) {
@@ -87,7 +99,7 @@ class Signer extends ChangeNotifier {
 
   @override
   void dispose() {
-    player.removeListener(notifyListeners);
+    player.removeListener(_onPlayer);
     player.dispose();
     super.dispose();
   }

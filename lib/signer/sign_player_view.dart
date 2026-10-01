@@ -64,5 +64,7 @@ class _SignPlayerViewState extends State<SignPlayerView> with SingleTickerProvid
   }
 
   @override
-  Widget build(BuildContext context) => RawImage(image: widget.player.frame, fit: BoxFit.contain);
+  // Its own layer: a new picture redraws only the signer, not the screen around her.
+  Widget build(BuildContext context) =>
+      RepaintBoundary(child: RawImage(image: widget.player.frame, fit: BoxFit.contain));
 }

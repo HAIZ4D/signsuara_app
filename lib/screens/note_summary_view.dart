@@ -78,17 +78,7 @@ class _AskGemini extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.lg + 2),
           child: Stack(
             children: [
-              Positioned.fill(
-                child: RepaintBoundary(
-                  child: Spin(
-                    period: const Duration(seconds: 8),
-                    child: Transform.scale(
-                      scale: 2.2,
-                      child: const DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageBorder)),
-                    ),
-                  ),
-                ),
-              ),
+              const Positioned.fill(child: TurningBorder(radius: AppRadius.lg + 2, period: Duration(seconds: 8))),
               Container(
                 margin: const EdgeInsets.all(2),
                 padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),

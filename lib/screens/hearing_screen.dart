@@ -12,6 +12,7 @@ import '../signer/sign_translator.dart';
 import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
+import '../ui/widgets/baked_gradients.dart';
 import '../ui/widgets/glass_chip.dart';
 import '../ui/widgets/motion.dart';
 import '../ui/widgets/note_sheet.dart';
@@ -173,7 +174,10 @@ class _HeroBackdrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const ClipRRect(
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(AppRadius.hero)),
-        child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.deep), child: Aurora()),
+        child: Stack(children: [
+          Positioned.fill(child: BakedGradients(layers: [AppGradients.deep])),
+          Positioned.fill(child: Aurora()),
+        ]),
       );
 }
 
@@ -202,164 +206,144 @@ class _Stage extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(borderRadius: BorderRadius.circular(30), boxShadow: AppShadows.pop),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: Stack(
-          children: [
-            // Turning brand-colour border, 2 px wide.
-            Positioned.fill(
-              child: RepaintBoundary(
-                child: Spin(
-                  child: Transform.scale(
-                    scale: 1.6,
-                    child: const DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageBorder)),
-                  ),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(28),
-                  child: Container(
-                    decoration: const BoxDecoration(gradient: AppGradients.studio),
-                    child: Stack(
-                      children: [
-                        // A light studio: a turquoise spotlight on the signer, a warm glow from below.
-                        const Positioned.fill(
-                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.spotlight)),
-                        ),
-                        const Positioned.fill(
-                          child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageWarm)),
-                        ),
-                        const Positioned(
-                          top: 22,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: RepaintBoundary(child: Spin(period: Duration(seconds: 40), child: _Halo(size: 236))),
-                          ),
-                        ),
-                        if (avatar)
-                          Positioned.fill(
-                            child: Padding(
-                              // the top chip and buttons sit in the empty corners beside the head
-                              padding: const EdgeInsets.fromLTRB(12, 30, 12, 16),
-                              child: LayoutBuilder(
-                                builder: (context, box) => Column(
-                                  children: [
-                                    // the signer gets all the room the words don't need; her clip is
-                                    // cut at the skirt, so its bottom edge fades into the stage
-                                    Expanded(
-                                      child: ExcludeSemantics(
-                                        child: ShaderMask(
-                                          blendMode: BlendMode.dstIn,
-                                          shaderCallback: AppGradients.avatarFade.createShader,
-                                          child: SignPlayerView(player: signer.player),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppSpace.s),
-                                    ConstrainedBox(
-                                      // long words take at most a third; on a short screen they give way
-                                      constraints: BoxConstraints(maxHeight: box.maxHeight / 3),
-                                      child: empty
-                                          ? Text('Tap Start listening. The signer signs what they say.',
-                                              textAlign: TextAlign.center,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 14))
-                                          : _SignedSentence(
-                                              text: text,
-                                              steps: signs,
-                                              current: current,
-                                              signed: ours ? signer.isSigned : (_) => false,
-                                              large: large,
-                                            ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          Positioned.fill(
-                            child: Center(
-                              child: SingleChildScrollView(
-                                reverse: true,
-                                padding: const EdgeInsets.fromLTRB(22, 48, 22, 24),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: AnimatedDefaultTextStyle(
-                                        duration: AppMotion.fast,
-                                        style: empty
-                                            ? AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 15)
-                                            : AppText.heroTitle
-                                                .copyWith(color: AppColors.ink, fontSize: large ? 36 : 27, height: 1.3),
-                                        child: Text(
-                                            empty
-                                                ? (listening
-                                                    ? 'Listening…'
-                                                    : 'Tap Start listening.\nTheir words show up here, big and clear.')
-                                                : text,
-                                            textAlign: TextAlign.center),
-                                      ),
-                                    ),
-                                    if (signs.isNotEmpty) ...[
-                                      const SizedBox(height: AppSpace.l),
-                                      _SignChips(signs: signs),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                        Positioned(
-                          top: 12,
-                          left: 12,
-                          child: _StageChip(
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              PulseDot(color: live ? AppColors.live : AppColors.offline, active: live),
-                              const SizedBox(width: 7),
-                              Text(signer.hasClips ? 'BIM signer' : 'BIM signer · coming soon',
-                                  style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
-                            ]),
-                          ),
-                        ),
-                        if (avatar)
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: Row(children: [
-                              _StageButton(
-                                icon: Icons.replay_rounded,
-                                label: 'Sign it again',
-                                onTap: ours && signer.canReplay ? signer.replay : null,
-                              ),
-                              _StageButton(
-                                icon: Icons.slow_motion_video_rounded,
-                                label: 'Slower signing',
-                                selected: signer.slow,
-                                onTap: signer.toggleSlow,
-                              ),
-                            ]),
-                          ),
-                      ],
+      // No clipping (it costs this kind of graphics chip extra passes in every frame): the
+      // layers below are drawn already rounded, and nothing else reaches the corners.
+      child: Stack(
+        children: [
+          // Turning brand-colour border, 2 px wide.
+          const Positioned.fill(child: TurningBorder(radius: 30)),
+          Positioned.fill(
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Stack(
+                children: [
+                  // A light studio: a turquoise spotlight on the signer, a warm glow from below.
+                  const Positioned.fill(
+                    child: BakedGradients(
+                      layers: [AppGradients.studio, AppGradients.spotlight, AppGradients.stageWarm],
+                      borderRadius: _stageCorners,
                     ),
                   ),
-                ),
+                  const Positioned(
+                    top: 22,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: RepaintBoundary(child: Spin(period: Duration(seconds: 40), child: _Halo(size: 236))),
+                    ),
+                  ),
+                  if (avatar)
+                    Positioned.fill(
+                      child: Padding(
+                        // the top chip and buttons sit in the empty corners beside the head
+                        padding: const EdgeInsets.fromLTRB(12, 30, 12, 16),
+                        child: LayoutBuilder(
+                          builder: (context, box) => Column(
+                            children: [
+                              // the signer gets all the room the words don't need (her clips
+                              // fade out at the skirt by themselves: tools/make_sign_clips.py)
+                              Expanded(
+                                child: ExcludeSemantics(child: SignPlayerView(player: signer.player)),
+                              ),
+                              const SizedBox(height: AppSpace.s),
+                              ConstrainedBox(
+                                // long words take at most a third; on a short screen they give way
+                                constraints: BoxConstraints(maxHeight: box.maxHeight / 3),
+                                child: empty
+                                    ? Text('Tap Start listening. The signer signs what they say.',
+                                        textAlign: TextAlign.center,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 14))
+                                    : _SignedSentence(
+                                        text: text,
+                                        steps: signs,
+                                        current: current,
+                                        signed: ours ? signer.isSigned : (_) => false,
+                                        large: large,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    Positioned.fill(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          reverse: true,
+                          padding: const EdgeInsets.fromLTRB(22, 48, 22, 24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Semantics(
+                                liveRegion: true,
+                                child: AnimatedDefaultTextStyle(
+                                  duration: AppMotion.fast,
+                                  style: empty
+                                      ? AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 15)
+                                      : AppText.heroTitle
+                                          .copyWith(color: AppColors.ink, fontSize: large ? 36 : 27, height: 1.3),
+                                  child: Text(
+                                      empty
+                                          ? (listening
+                                              ? 'Listening…'
+                                              : 'Tap Start listening.\nTheir words show up here, big and clear.')
+                                          : text,
+                                      textAlign: TextAlign.center),
+                                ),
+                              ),
+                              if (signs.isNotEmpty) ...[
+                                const SizedBox(height: AppSpace.l),
+                                _SignChips(signs: signs),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 12,
+                    left: 12,
+                    child: _StageChip(
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        PulseDot(color: live ? AppColors.live : AppColors.offline, active: live),
+                        const SizedBox(width: 7),
+                        Text(signer.hasClips ? 'BIM signer' : 'BIM signer · coming soon',
+                            style: AppText.label.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
+                      ]),
+                    ),
+                  ),
+                  if (avatar)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: Row(children: [
+                        _StageButton(
+                          icon: Icons.replay_rounded,
+                          label: 'Sign it again',
+                          onTap: ours && signer.canReplay ? signer.replay : null,
+                        ),
+                        _StageButton(
+                          icon: Icons.slow_motion_video_rounded,
+                          label: 'Slower signing',
+                          selected: signer.slow,
+                          onTap: signer.toggleSlow,
+                        ),
+                      ]),
+                    ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
+
+const _stageCorners = BorderRadius.all(Radius.circular(28)); // inside the 2 px border
 
 /// The words under the signer; the word being signed now is highlighted (design: .hm-chunk.active).
 /// Words the avatar can't sign yet (no clip) are grey, with a note saying so.
@@ -554,11 +538,13 @@ class _HaloPainter extends CustomPainter {
       ..color = AppColors.haloDash
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
+    // All 48 dashes as one shape: one drawing call instead of 48 in every frame.
     const n = 48;
+    final dashes = Path();
     for (var i = 0; i < n; i++) {
-      final a = i * 2 * pi / n;
-      canvas.drawArc(Rect.fromCircle(center: c, radius: r), a, pi / n, false, dash);
+      dashes.addArc(Rect.fromCircle(center: c, radius: r), i * 2 * pi / n, pi / n);
     }
+    canvas.drawPath(dashes, dash);
     canvas.drawCircle(
       c,
       r - 22,

@@ -252,7 +252,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
-     (560 px). The app picks the new clips up by itself.
+     (560 px; the bottom tenth of each frame fades out, because the picture is cut at the skirt).
+     The app picks the new clips up by itself.
 - **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
   `saya`, `nama`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
   both hands).
@@ -302,6 +303,37 @@ look:
   and the shine are drawn once and only moved; out-of-sight tabs pause their animations
   (`TickerMode` in `lib/app/app_shell.dart`), which also saves battery.
 - Small things: the dotted pattern drawn in one call, no extra transparency layer on the waveform.
+
+A second round (power saving off) worked on Listen and Chat, measured the same way. Here building a
+frame was cheap again, except while the signer signed:
+
+| Screen | Before | After |
+|---|---|---|
+| Listen, signer standing | 30 fps | 60 fps |
+| Listen, signer signing | 40 fps (already with the cheaper border) | 59 fps |
+| Chat, signer signing | 41 fps | 60 fps |
+| Chat, idle | 60 fps | 60 fps |
+| Home | 49 fps | 53 fps |
+| Gestures | – | 59 fps |
+| Notes | 60 fps | 60 fps |
+
+- **Soft colour layers painted once** (`BakedGradients`, `lib/ui/widgets/baked_gradients.dart`):
+  the graphics chip works out a big gradient pixel by pixel in every frame. The Listen stage's
+  three layers (white-to-blue, turquoise spotlight, warm glow) took about 10 ms of the 16.7 ms a
+  frame has, the dark header behind the title about 4 ms. They are now painted once into a picture
+  that every frame only copies (made again only when the size changes); the look is the same.
+  Used for the Listen stage, the dark headers (Home, Chat, Gestures, Notes, Listen) and Chat's
+  signing stage. Listen: 24 → 14 ms of drawing per frame.
+- **The turning border is only an edge** (`TurningBorder` in `motion.dart`): before, a big
+  gradient turned behind the card and was cut to its shape. The stages are no longer cut
+  (clipped) to their round corners either: their layers are drawn round already.
+- **The avatar's fade is in the clips** (`tools/make_sign_clips.py`): the bottom tenth of each
+  frame fades out once, when the clip is made, instead of a mask over the avatar in every frame.
+- **The signer no longer rebuilds the whole app for each picture** (`lib/signer/signer.dart`):
+  the screens only hear when signing starts or stops, the next sign begins or the speed changes
+  (24 times a second before, for all five tabs; the work per frame while signing went from ~9 ms
+  to ~2 ms). The avatar has its own layer (`sign_player_view.dart`).
+- Tried and dropped: painting the header's drifting blobs once as well made no difference.
 
 For the smoothest app (e.g. a demo): install a **release build** (`flutter build apk --release`,
 then `adb install -r build/app/outputs/flutter-apk/app-release.apk`, or `flutter run --release`;

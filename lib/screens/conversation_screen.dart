@@ -8,6 +8,7 @@ import '../signer/signer.dart';
 import '../speech/sign_words.dart';
 import '../theme/app_theme.dart';
 import '../ui/finger_bend.dart';
+import '../ui/widgets/baked_gradients.dart';
 import '../ui/widgets/brand.dart';
 import '../ui/widgets/chat_bubble.dart';
 import '../ui/widgets/finger_bars.dart';
@@ -489,70 +490,67 @@ class _SigningStage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final current = signer.currentStep;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(22),
-      child: Container(
-        height: 280, // big enough to read the handshapes
-        decoration: const BoxDecoration(gradient: AppGradients.stage),
-        child: Stack(
-          children: [
-            // The glow sits behind the signer, so its colours stay true.
-            const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: AppGradients.stageGlow))),
-            Positioned.fill(
-              top: 6,
-              bottom: 38,
-              // her clip is cut at the skirt, so its bottom edge fades into the stage
-              child: ExcludeSemantics(
-                child: ShaderMask(
-                  blendMode: BlendMode.dstIn,
-                  shaderCallback: AppGradients.avatarFade.createShader,
-                  child: SignPlayerView(player: signer.player),
-                ),
-              ),
+    // No clipping (it costs this kind of graphics chip extra passes in every frame): the colours
+    // are drawn already rounded, and nothing else reaches the corners.
+    return SizedBox(
+      height: 280, // big enough to read the handshapes
+      child: Stack(
+        children: [
+          // The glow sits behind the signer, so its colours stay true. Painted once.
+          const Positioned.fill(
+            child: BakedGradients(
+              layers: [AppGradients.stage, AppGradients.stageGlow],
+              borderRadius: BorderRadius.all(Radius.circular(22)),
             ),
+          ),
+          Positioned.fill(
+            top: 6,
+            bottom: 38,
+            // her clips fade out at the skirt by themselves (tools/make_sign_clips.py)
+            child: ExcludeSemantics(child: SignPlayerView(player: signer.player)),
+          ),
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.chipOnStage,
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                border: Border.all(color: AppColors.glassBorder),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const PulseDot(color: AppColors.live),
+                const SizedBox(width: 7),
+                Text('BIM signer', style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
+              ]),
+            ),
+          ),
+          if (current != null)
             Positioned(
-              top: 10,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppColors.chipOnStage,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.glassBorder),
-                ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const PulseDot(color: AppColors.live),
-                  const SizedBox(width: 7),
-                  Text('BIM signer', style: AppText.label.copyWith(color: AppColors.onDarkSoft, fontSize: 11.5)),
-                ]),
-              ),
-            ),
-            if (current != null)
-              Positioned(
-                bottom: 10,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Semantics(
-                    liveRegion: true,
-                    label: 'Signing: ${signer.steps[current].text}',
-                    excludeSemantics: true,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: AppGradients.sun,
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        boxShadow: AppShadows.sunGlow,
-                      ),
-                      child: Text(signer.steps[current].label,
-                          style: AppText.eyebrow.copyWith(
-                              color: AppColors.onYellow, fontFamily: AppFonts.display, fontSize: 12, letterSpacing: 1)),
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Semantics(
+                  liveRegion: true,
+                  label: 'Signing: ${signer.steps[current].text}',
+                  excludeSemantics: true,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: AppGradients.sun,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      boxShadow: AppShadows.sunGlow,
                     ),
+                    child: Text(signer.steps[current].label,
+                        style: AppText.eyebrow.copyWith(
+                            color: AppColors.onYellow, fontFamily: AppFonts.display, fontSize: 12, letterSpacing: 1)),
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }

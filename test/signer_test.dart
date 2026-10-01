@@ -102,6 +102,20 @@ void main() {
     expect([signer.signing, signer.currentStep], [false, null]);
   });
 
+  test('the screens hear about each new sign, not about every picture of it', () async {
+    final signer = fakeSigner(image, {'terima_kasih', 'ya'});
+    await pumpEventQueue();
+    var told = 0;
+    signer.addListener(() => told++);
+    signer.show('Terima kasih ya');
+    await pumpEventQueue();
+    for (var i = 0; i < 6; i++) {
+      await after(const Duration(milliseconds: 40), signer.player.advance); // 2 signs × 3 pictures
+    }
+    expect(signer.signing, isFalse);
+    expect(told, 4, reason: 'new words, TERIMA KASIH starts, YA starts, done; not each of the 6 pictures');
+  });
+
   test('knows which words are really signed, and whether there is anything to sign again', () async {
     final signer = fakeSigner(image, {'terima_kasih'});
     await pumpEventQueue();

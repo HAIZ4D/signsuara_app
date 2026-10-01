@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_theme.dart';
+import 'baked_gradients.dart';
 import 'motion.dart';
 
 /// Dark-blue header panel with drifting colour blobs and round bottom corners (design: .hx-hero).
@@ -15,23 +16,23 @@ class HeroPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppRadius.hero)),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppGradients.deep),
-        child: Stack(
-          children: [
-            const Positioned.fill(child: Aurora()),
-            if (backdrop case final backdrop?) Positioned.fill(child: backdrop),
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpace.xl,
-                MediaQuery.paddingOf(context).top + AppSpace.s,
-                AppSpace.xl,
-                bottomPadding,
-              ),
-              child: child,
+      child: Stack(
+        children: [
+          // The dark-blue colour is painted once (a big gradient costs this kind of graphics chip
+          // a few ms in every frame; README "Smoothness").
+          const Positioned.fill(child: BakedGradients(layers: [AppGradients.deep])),
+          const Positioned.fill(child: Aurora()),
+          if (backdrop case final backdrop?) Positioned.fill(child: backdrop),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpace.xl,
+              MediaQuery.paddingOf(context).top + AppSpace.s,
+              AppSpace.xl,
+              bottomPadding,
             ),
-          ],
-        ),
+            child: child,
+          ),
+        ],
       ),
     );
   }

@@ -148,13 +148,6 @@ abstract final class AppGradients {
     radius: 0.75,
     colors: [Color(0x26FFC82D), Color(0x00FFC82D)],
   );
-  /// Mask that fades the bottom edge of the signer clip into the stage (the clip is cut at the skirt).
-  static const avatarFade = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF000000), Color(0xFF000000), Color(0x00000000)],
-    stops: [0, 0.9, 1],
-  );
   /// Border that slowly turns around the Hearing stage and the mic ring (design: conic border).
   static const stageBorder = SweepGradient(colors: [
     Color(0xF213C6D6),

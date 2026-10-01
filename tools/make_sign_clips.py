@@ -3,29 +3,48 @@
 character/renders/<id>/0001.png ... (800 px, transparent, from tools/blender/render_signs.py)
   -> assets/signs/<id>.webp (560 px, 24 fps, transparent; one frame = a still picture)
 
+Her clip is cut at the skirt, so the bottom tenth of every frame fades out here, once. (The app used
+to fade it with a mask, which cost the phone's graphics chip an extra pass in every frame.)
+
 Run from the project folder:  python tools/make_sign_clips.py [id ...]   (no ids = all)
 Only signs checked by a fluent BIM signer should be turned into clips.
 """
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 RENDERS = Path('character/renders')
 OUT = Path('assets/signs')
 SIZE = 560
 FPS = 24
+FADE_FROM = 0.9  # share of the height where the fade starts; fully transparent at the bottom
+
+
+def _fade_row(y: int) -> int:
+    t = (y + 0.5) / SIZE  # the pixel's centre, 0 = top
+    return 255 if t <= FADE_FROM else round(255 * (1 - t) / (1 - FADE_FROM))
+
+
+FADE = Image.new('L', (SIZE, SIZE))
+FADE.putdata([_fade_row(y) for y in range(SIZE) for _ in range(SIZE)])
+
+
+def faded(frame: Image.Image) -> Image.Image:
+    frame.putalpha(ImageChops.multiply(frame.getchannel('A'), FADE))
+    return frame
 
 
 def make(folder: Path) -> None:
-    frames = [Image.open(f).convert('RGBA').resize((SIZE, SIZE), Image.LANCZOS) for f in sorted(folder.glob('*.png'))]
+    frames = [faded(Image.open(f).convert('RGBA').resize((SIZE, SIZE), Image.LANCZOS))
+              for f in sorted(folder.glob('*.png'))]
     if not frames:
         print(f'{folder.name}: no frames, skipped')
         return
     target = OUT / f'{folder.name}.webp'
     frames[0].save(target, save_all=len(frames) > 1, append_images=frames[1:], duration=round(1000 / FPS), loop=0,
                    quality=85, method=6)
-    print(f'{target}: {len(frames)} frame(s), {target.stat().st_size // 1024} KB')
+    print(f'{target}: {len(frames)} frame(s), {target.stat().st_size // 1024} KB', flush=True)
 
 
 if __name__ == '__main__':
