@@ -22,8 +22,13 @@ class FirestoreNoteStore implements NoteStore {
           ]);
 
   @override
-  Future<void> save(ListenNote note) => _notes.doc(note.id).set(note.toMap());
+  Future<void> save(ListenNote note) => _sent(_notes.doc(note.id).set(note.toMap()));
 
   @override
-  Future<void> delete(String id) => _notes.doc(id).delete();
+  Future<void> delete(String id) => _sent(_notes.doc(id).delete());
+
+  // Firestore confirms a change only once the server has it, which offline means "when the internet is
+  // back" (Stop's sheet or a summary would wait that long). The phone's copy has it at once (watch()
+  // shows it), so wait for the server at most 2 s.
+  static Future<void> _sent(Future<void> write) => write.timeout(const Duration(seconds: 2), onTimeout: () {});
 }

@@ -124,6 +124,11 @@ class AppServices {
   /// Words for any label: a custom gesture's phrase, or the built-in speech map.
   SignWords words(String label) => gestures.customWords(label) ?? wordsFor(label);
 
+  /// True once the notice about Gemini summaries was accepted (asked again when storage fails).
+  bool get summaryNoticeSeen => _storage?.summaryNoticeSeen() ?? false;
+
+  Future<void> markSummaryNoticeSeen() async => _storage?.saveSummaryNoticeSeen();
+
   void setLanguage(SpeechLanguage language) {
     speaker.setLanguage(language);
     _storage?.saveLanguage(language);

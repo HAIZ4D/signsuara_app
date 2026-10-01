@@ -1,4 +1,5 @@
 import '../speech/sign_words.dart';
+import 'note_summary.dart';
 
 /// What was listened to; chosen when a Listen session is saved.
 enum NoteKind {
@@ -35,6 +36,7 @@ class ListenNote {
     required this.startedAt,
     required this.endedAt,
     required this.lines,
+    this.summary,
   });
 
   final String id;
@@ -44,10 +46,12 @@ class ListenNote {
   final DateTime startedAt;
   final DateTime endedAt;
   final List<NoteLine> lines;
+  final NoteSummary? summary; // made by Gemini when the user asks (README "Listen and Notes")
 
   Duration get duration => endedAt.difference(startedAt);
 
-  ListenNote copyWith({NoteKind? kind, String? title, DateTime? endedAt, List<NoteLine>? lines}) => ListenNote(
+  ListenNote copyWith({NoteKind? kind, String? title, DateTime? endedAt, List<NoteLine>? lines, NoteSummary? summary}) =>
+      ListenNote(
         id: id,
         kind: kind ?? this.kind,
         title: title ?? this.title,
@@ -55,6 +59,7 @@ class ListenNote {
         startedAt: startedAt,
         endedAt: endedAt ?? this.endedAt,
         lines: lines ?? this.lines,
+        summary: summary ?? this.summary,
       );
 
   /// For the database (README "Firebase setup"). Times stay DateTime: Firestore stores them as
@@ -68,6 +73,7 @@ class ListenNote {
         'lines': [
           for (final line in lines) {'text': line.text, 'at': line.at},
         ],
+        if (summary case final summary?) 'summary': summary.toMap(),
       };
 
   /// The opposite of [toMap]. [time] turns a stored time back into a DateTime (Firestore gives
@@ -86,6 +92,7 @@ class ListenNote {
           for (final line in (map['lines'] as List).cast<Map<Object?, Object?>>())
             NoteLine(line['text'] as String, time(line['at'])),
         ],
+        summary: NoteSummary.fromMap(map['summary'], time: time),
       );
     } catch (_) {
       return null;

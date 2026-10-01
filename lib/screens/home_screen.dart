@@ -411,10 +411,10 @@ class _LatestNote extends StatelessWidget {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppText.small.copyWith(color: AppColors.onDarkSoft, fontSize: 12.5)),
-                              if (note != null && note.lines.isNotEmpty)
+                              if (note?.summary?.overview ?? note?.lines.firstOrNull?.text case final preview?)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 6),
-                                  child: Text(note.lines.first.text,
+                                  child: Text(preview,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: AppText.small.copyWith(color: AppColors.onDark, fontSize: 12.5)),

@@ -3,14 +3,17 @@ import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/custom/custom_gesture.dart';
 import 'package:signsuara_app/custom/gesture_store.dart';
 import 'package:signsuara_app/history/history_store.dart';
+import 'package:signsuara_app/listen/listen_note.dart';
 import 'package:signsuara_app/listen/note_store.dart';
+import 'package:signsuara_app/listen/note_summary.dart';
 
 const testUser = AppUser(uid: 'u1', name: 'Test User', email: 'test.user@example.com');
 
 /// Stands in for Firebase + Google in tests: [next] is what the account picker "returns"
 /// (null = the user closed it), [failure] makes sign-in fail.
 class FakeAuthBackend implements AuthBackend {
-  FakeAuthBackend({this.currentUser, this.next = testUser, this.failure});
+  FakeAuthBackend({this.currentUser, this.next = testUser, this.failure, FakeSummarizer? summarizer})
+      : fakeSummarizer = summarizer ?? FakeSummarizer();
 
   @override
   AppUser? currentUser;
@@ -41,6 +44,11 @@ class FakeAuthBackend implements AuthBackend {
 
   @override
   NoteStore notesFor(AppUser user) => noteStores.putIfAbsent(user.uid, MemoryNoteStore.new);
+
+  final FakeSummarizer fakeSummarizer;
+
+  @override
+  Summarizer summarizer() => fakeSummarizer;
 
   /// Makes the next rename fail.
   SignInFailure? renameFailure;
@@ -111,3 +119,29 @@ class FakeGestureStore implements GestureStore {
     saved.remove(id);
   }
 }
+
+/// Gemini in tests: returns [result] (or throws [failure]) and remembers what it was asked.
+class FakeSummarizer implements Summarizer {
+  FakeSummarizer({NoteSummary? result, this.failure}) : result = result ?? exampleSummary;
+
+  NoteSummary result;
+  SummaryFailure? failure;
+  final asked = <ListenNote>[];
+
+  @override
+  Future<NoteSummary> summarize(ListenNote note) async {
+    asked.add(note);
+    if (failure case final failure?) throw failure;
+    return result;
+  }
+}
+
+final exampleSummary = NoteSummary(
+  overview: 'The doctor explained how to take the new medicine.',
+  keyPoints: const ['The medicine is for the cough.'],
+  actions: const ['Take the medicine twice a day after meals.'],
+  details: const ['2 times a day', 'Next visit: 8 October'],
+  terms: const [SummaryTerm('Antibiotik', 'Ubat yang membunuh kuman.')],
+  madeAt: DateTime(2026, 10, 1, 10),
+  model: 'test-model',
+);

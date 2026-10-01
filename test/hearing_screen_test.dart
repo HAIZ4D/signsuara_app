@@ -1,4 +1,4 @@
-import 'dart:ui' show SemanticsFlag;
+import 'dart:ui' show Tristate;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -221,8 +221,7 @@ void main() {
     expect(services.signer.isSigned(0), isFalse);
     expect(find.text('Grey words have no sign clip yet.'), findsOneWidget);
     final replay = tester.getSemantics(find.bySemanticsLabel('Sign it again'));
-    expect(replay.hasFlag(SemanticsFlag.hasEnabledState) && !replay.hasFlag(SemanticsFlag.isEnabled), isTrue,
-        reason: 'shown as disabled');
+    expect(replay.getSemanticsData().flagsCollection.isEnabled, Tristate.isFalse, reason: 'shown as disabled');
     semantics.dispose();
   });
 

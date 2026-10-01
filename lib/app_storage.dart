@@ -14,6 +14,7 @@ class AppStorage {
 
   static const _gesturesKey = 'custom_gestures';
   static const _languageKey = 'speech_language';
+  static const _summaryNoticeKey = 'summary_notice_seen';
 
   final SharedPreferences _prefs;
 
@@ -33,4 +34,9 @@ class AppStorage {
   SpeechLanguage? loadLanguage() => SpeechLanguage.values.asNameMap()[_prefs.getString(_languageKey)];
 
   Future<void> saveLanguage(SpeechLanguage language) => _prefs.setString(_languageKey, language.name);
+
+  /// True once the user has read (and accepted) what summaries send to Google.
+  bool summaryNoticeSeen() => _prefs.getBool(_summaryNoticeKey) ?? false;
+
+  Future<void> saveSummaryNoticeSeen() => _prefs.setBool(_summaryNoticeKey, true);
 }

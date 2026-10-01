@@ -146,7 +146,7 @@ class _NoteCard extends StatelessWidget {
         '$count ${count == 1 ? 'sentence' : 'sentences'}';
     return Semantics(
       button: true,
-      label: '${note.title}. ${note.kind.label}, $meta',
+      label: '${note.title}. ${note.kind.label}, $meta${note.summary != null ? ', with Gemini notes' : ''}',
       excludeSemantics: true,
       child: Container(
         decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), boxShadow: AppShadows.card),
@@ -173,9 +173,17 @@ class _NoteCard extends StatelessWidget {
                             style: AppText.strong.copyWith(color: AppColors.ink)),
                         const SizedBox(height: 3),
                         Text(meta, style: AppText.small.copyWith(color: AppColors.inkSoft)),
-                        if (note.lines.isNotEmpty) ...[
+                        if (note.summary != null) ...[
                           const SizedBox(height: 6),
-                          Text(note.lines.first.text,
+                          Row(children: [
+                            const Icon(Icons.auto_awesome_rounded, size: 13, color: AppColors.onYellowInk),
+                            const SizedBox(width: 4),
+                            Text('Gemini notes', style: AppText.small.copyWith(color: AppColors.onYellowInk)),
+                          ]),
+                        ],
+                        if (note.summary?.overview ?? note.lines.firstOrNull?.text case final preview?) ...[
+                          const SizedBox(height: 4),
+                          Text(preview,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 13)),

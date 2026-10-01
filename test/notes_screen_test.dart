@@ -3,24 +3,31 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:signsuara_app/app/app_services.dart';
+import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/listen/listen_note.dart';
+import 'package:signsuara_app/listen/note_summary.dart';
 import 'package:signsuara_app/screens/notes_screen.dart';
 import 'package:signsuara_app/signer/sign_clips.dart';
 import 'package:signsuara_app/signer/signer.dart';
 import 'package:signsuara_app/speech/sign_words.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 
+import 'fake_auth_backend.dart';
 import 'fake_transcriber.dart';
 
 var _openedListen = 0;
 
-Future<AppServices> _pump(WidgetTester tester, {List<ListenNote> notes = const []}) async {
+Future<AppServices> _pump(WidgetTester tester, {List<ListenNote> notes = const [], FakeSummarizer? gemini}) async {
   tester.view.physicalSize = const Size(1080, 2400); // a phone: 360 x 800
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
-  final services =
-      AppServices(signer: Signer(library: Future.value(const SignClipLibrary({}))), transcriber: FakeTranscriber());
+  final services = AppServices(
+    account: Account(FakeAuthBackend(summarizer: gemini)), // a guest; Gemini is a fake
+    signer: Signer(library: Future.value(const SignClipLibrary({}))),
+    transcriber: FakeTranscriber(),
+  );
   addTearDown(services.dispose);
+  await services.start(); // the phone's storage (it remembers the Gemini notice)
   for (final note in notes) {
     await services.notes.save(note);
   }
@@ -127,5 +134,50 @@ void main() {
     await tester.pump(const Duration(milliseconds: 600)); // back to the list (its hero keeps moving)
     expect(services.notes.all, isEmpty);
     expect(find.text('No notes yet'), findsOneWidget, reason: 'back on the list');
+  });
+
+  testWidgets("Summarise: the notice once, then Gemini's notes in parts, kept in the note", (tester) async {
+    final gemini = FakeSummarizer();
+    final services = await _pump(tester, notes: [visit], gemini: gemini);
+    await tester.tap(find.text('Doctor visit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Clear notes by Gemini'), findsOneWidget);
+
+    await tester.tap(find.text('Summarise with Gemini'));
+    await tester.pumpAndSettle();
+    expect(find.text('Make notes with Gemini?'), findsOneWidget, reason: 'it says what is sent to Google first');
+    expect(find.textContaining('not medical advice'), findsOneWidget);
+    await tester.tap(find.text('Make notes'));
+    await tester.pumpAndSettle();
+
+    expect(gemini.asked.single.id, 'n2');
+    expect(find.text('SUMMARY'), findsOneWidget);
+    expect(find.text('The doctor explained how to take the new medicine.'), findsOneWidget);
+    expect(find.text('Take the medicine twice a day after meals.'), findsOneWidget);
+    expect(find.text('Next visit: 8 October'), findsOneWidget, reason: 'an important detail');
+    expect(find.text('Antibiotik  Ubat yang membunuh kuman.', findRichText: true), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('WHAT WAS SAID'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('WHAT WAS SAID'), findsOneWidget, reason: 'the transcript stays');
+    expect(services.notes.all.single.summary!.overview, exampleSummary.overview, reason: 'kept in the note');
+
+    await tester.ensureVisible(find.text('Summarise again'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Summarise again'));
+    await tester.pumpAndSettle();
+    expect(find.text('Make notes with Gemini?'), findsNothing, reason: 'the notice is shown only once');
+    expect(gemini.asked, hasLength(2));
+  });
+
+  testWidgets('when Gemini fails, the reason is shown and the note stays as it was', (tester) async {
+    final gemini = FakeSummarizer(failure: const SummaryFailure('The summary needs the internet.'));
+    final services = await _pump(tester, notes: [visit], gemini: gemini);
+    await services.markSummaryNoticeSeen();
+    await tester.tap(find.text('Doctor visit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Summarise with Gemini'));
+    await tester.pumpAndSettle();
+    expect(find.text('The summary needs the internet.'), findsOneWidget);
+    expect(find.text('Summarise with Gemini'), findsOneWidget, reason: 'it can be tried again');
+    expect(services.notes.all.single.summary, isNull);
   });
 }

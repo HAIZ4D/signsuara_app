@@ -12,7 +12,8 @@ Universiti Putra Malaysia (UPM).
 - **Speech output** in Malay or English (BM/EN switch, remembered after restart).
 - **Speech-to-text** for the hearing person: in **Chat** tap to talk (daily two-way talk); in
   **Listen** the phone listens on and on (a meeting, a class, a program, a consultation) and every
-  sentence is kept as a **note** (see "Listen and Notes").
+  sentence is kept as a **note**, which Gemini turns into clear, simple notes when you ask
+  (see "Listen and Notes").
 - **Custom gestures**: record your own gesture on the phone and give it a Malay/English phrase.
 - **Optional Google sign-in** (Firebase): the app greets you by name, keeps your
   **conversation history** (read back or delete past conversations) and **backs up your custom
@@ -121,10 +122,26 @@ of the chat or its history.
   top are real (notes, time listened). A note (`note_screen.dart`) shows every sentence with its
   time, and can be copied as text, edited (kind and title, with the same sheet as after Stop) or
   deleted. Home shows the latest note, and a Notes tile with the count.
-- **Coming next:** summaries made by Gemini when you ask for one.
+- **Summaries by Gemini** (`lib/listen/note_summary.dart`, `lib/cloud/gemini_summarizer.dart`):
+  only when you tap **Summarise with Gemini** in a note. Gemini (model `gemini-3.8-flash`, through
+  Firebase AI Logic) gets the note's sentences with their times and is asked to write, in the
+  note's language, in short simple sentences, only what was said, keeping every number, date,
+  time and dose exactly. Its answer comes back as JSON with a fixed shape and is shown as cards:
+  **Summary**, **Key points**, **Advice & to do**, **Important details** (yellow chips) and
+  **Words explained** (hard, medical, scientific or religious words with a simple meaning); empty
+  parts are left out. The summary is saved in the note (also offline, sent later), shown in the
+  Notes list and on Home, and part of the copied text. "Summarise again" makes a new one; the full
+  transcript always stays below it.
+- **Privacy:** before the first summary the app says what happens and asks: the note's words are
+  sent to Google's Gemini. SignSuara uses the **paid** Agent Platform Gemini API (formerly Vertex
+  AI), whose terms say requests are not used to train Google's models (the free tier of the Gemini
+  Developer API may use them and let people read them, so it is not used). Nothing is sent before
+  you tap.
+- **Not medical advice:** Gemini can make mistakes, so each summary says "Made by Gemini: check
+  important details", and doses and dates should be checked against what was said.
 - **Limitations:** the restart after each sentence takes a moment, so a word said exactly then can
-  be missed; some phones play a short sound each time listening starts; speech recognition needs
-  internet, and a long session uses more battery.
+  be missed; some phones play a short sound each time listening starts; speech recognition and
+  summaries need internet, and a long session uses more battery.
 
 ## Custom gestures
 
@@ -240,9 +257,9 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
-| `lib/listen/` | Listen sessions and their notes (the note, its store, the list for Notes and Home) |
+| `lib/listen/` | Listen sessions and their notes (the note, its store, the list for Notes and Home, the summary and what Gemini is asked) |
 | `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Chat (conversation), Listen (hearing), Notes (list + one note), history, Profile & settings |
-| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup) |
+| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup), `firestore_note_store.dart` (Listen notes), `gemini_summarizer.dart` (the only file using Gemini) |
 | `lib/signer/` | words → BIM signs: the sign dictionary, the translator and the clip player |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
@@ -250,12 +267,12 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 153 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 175 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
-Requirements: Flutter 3.29 (Dart 3.7), an Android phone with Android 7.0 or newer and
-Bluetooth LE.
+Requirements: Flutter 3.47 (Dart 3.13), an Android phone with Android 7.0 or newer and
+Bluetooth LE. The Android build uses Gradle 8.14 and the Android Gradle Plugin 8.13.
 
 ```
 flutter pub get
@@ -312,6 +329,13 @@ Firebase project:
    }
    ```
 
+7. **AI Logic** (Gemini summaries of notes): Firebase console → AI Services → AI Logic → Get
+   started → choose the **Agent Platform Gemini API** (formerly Vertex AI) and enable the APIs it
+   asks for. It is paid per use on the Blaze plan, so also set a **budget with alerts** in Google
+   Cloud Billing (for example RM10 a month). No API key goes in the app: Firebase AI Logic uses
+   the app's own Firebase project. The model is one constant, `GeminiSummarizer.model`; Google
+   retires old Gemini models, so check that it is still offered.
+
 Saved per user:
 - `users/{uid}`: name, email, photo link, first and last sign-in time, `username` when the name
   was changed in Profile and `customPhotoUrl` when the photo was (the app puts them back if a later
@@ -325,7 +349,8 @@ Saved per user:
   Firestore keeps a copy on the phone, so saving works offline and is sent later.
 - `users/{uid}/notes/{id}`: a Listen session: `kind` (meeting, lesson, consultation, program,
   other), `title`, `language` (malay or english), `startedAt`, `endedAt` and `lines`, a list of
-  `{text, at}` (one per sentence heard).
+  `{text, at}` (one per sentence heard); after Summarise also `summary`: `overview`, the lists
+  `keyPoints`, `actions`, `details` and `terms` (`{term, meaning}`), `madeAt` and `model`.
 - `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `savedAt` and `recordings` (the raw
   recordings as one JSON text, because Firestore can't store lists inside lists).
   The list on the phone is the one the app uses; the account keeps a copy
@@ -334,8 +359,9 @@ Saved per user:
   uploaded and every deleted one removed. While signed out nothing is copied, so a gesture
   deleted then comes back at the next sign-in.
 
-Without an account (guest) nothing is sent to Firebase: conversations are kept only until the app
-closes.
+Without an account (guest) nothing is saved in Firebase: conversations and notes are kept only
+until the app closes. A summary still needs Gemini, so Summarise sends that note's words to it
+(through Firebase AI Logic), for guests too.
 
 ## Adding a new built-in sign
 
@@ -353,6 +379,11 @@ never hardcodes the labels, the number of classes or the window size.
 - Speech-to-text normally needs internet; the Malay voice depends on the phone's TTS engine.
 - Custom gestures are compared with the built-in signs, not with each other, so keep them
   clearly different.
+- Summaries need internet, and Gemini can make mistakes or miss something (the transcript always
+  stays).
+- Firebase App Check is not set up yet, so someone who copies the app's Firebase settings could use
+  Gemini on the project's bill; the budget alert limits that. App Check is the next hardening
+  step.
 
 ## Packages and licences
 
@@ -366,6 +397,7 @@ never hardcodes the labels, the number of classes or the window size.
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
 | `google_sign_in` | Google account picker | BSD-3-Clause |
 | `firebase_storage` | profile photos | BSD-3-Clause |
+| `firebase_ai` | Gemini summaries of notes (Firebase AI Logic); it brings `firebase_app_check` (BSD-3-Clause), not used yet | Apache-2.0 |
 | `image_picker` | take or choose a profile photo | Apache-2.0 / BSD-3-Clause |
 | BIM signer character | "FREE MODEL 青髪三つ編みメガネっ子" by 水銀メイド (VRoid Hub); only rendered clips are included | VRoid Hub conditions set by the author (credit required, no redistribution of the model) |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

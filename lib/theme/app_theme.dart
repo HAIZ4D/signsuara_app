@@ -16,6 +16,7 @@ abstract final class AppColors {
   static const yellowSoft = Color(0xFFFFD861);
   static const onYellow = Color(0xFF3A2C00); // text on yellow
   static const onYellowInk = Color(0xFFB07F00); // yellow-ish text on white
+  static const yellowWash = Color(0xFFFFF3CC); // pale yellow behind important details (onYellow text)
 
   // Light app surfaces
   static const bg = Color(0xFFF3F6FB);

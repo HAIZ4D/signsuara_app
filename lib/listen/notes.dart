@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../cloud/account.dart';
 import 'listen_note.dart';
 import 'note_store.dart';
+import 'note_summary.dart';
 
 /// The Listen notes for the Notes tab and Home, newest first. Signed in: the account's (kept);
 /// guest: in memory, kept until the app closes.
@@ -46,6 +47,19 @@ class Notes extends ChangeNotifier {
   }
 
   Future<void> save(ListenNote note) => store.save(note);
+
+  /// Asks Gemini for [note]'s summary and keeps it in the note. Throws [SummaryFailure].
+  Future<ListenNote> summarize(ListenNote note) async {
+    final summarizer = account.summarizer;
+    if (summarizer == null) throw const SummaryFailure('Summaries are not available: the app could not reach Firebase.');
+    final summary = await summarizer.summarize(note);
+    // Gemini takes a while: keep an edit made meanwhile, and don't bring back a deleted note.
+    final latest = byId(note.id);
+    if (latest == null) return note.copyWith(summary: summary);
+    final done = latest.copyWith(summary: summary);
+    await save(done);
+    return done;
+  }
 
   Future<void> delete(String id) => store.delete(id);
 

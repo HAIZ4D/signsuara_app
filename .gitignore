@@ -69,3 +69,6 @@ GoogleService-Info.plist
 # Downloaded 3D characters: their licences forbid sharing the model files (only rendered clips go in the app)
 character/
 *.vrm
+# Blender files contain the imported character too (and *.blend1 are Blender's backups)
+*.blend
+*.blend1

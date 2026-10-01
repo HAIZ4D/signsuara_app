@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
 import '../listen/note_store.dart';
+import '../listen/note_summary.dart';
 
 /// A signed-in Google user: only what the app shows and saves (no tokens).
 class AppUser {
@@ -56,6 +57,9 @@ abstract class AuthBackend {
 
   /// Where this user's Listen notes are kept.
   NoteStore notesFor(AppUser user);
+
+  /// What makes a note's summary (Gemini); also for guests, as it needs no sign-in.
+  Summarizer summarizer();
 }
 
 /// Who is using the app: a Google account, or a guest (no account, no cloud features).
@@ -82,6 +86,10 @@ class Account extends ChangeNotifier {
 
   /// The signed-in user's Listen notes; null for a guest.
   NoteStore? get notes => _stores()?.notes;
+
+  /// Makes summaries of notes (Gemini); null when Firebase could not start.
+  Summarizer? get summarizer => _summarizer ??= _backend?.summarizer();
+  Summarizer? _summarizer;
 
   _Stores? _stores() {
     final user = _user;
