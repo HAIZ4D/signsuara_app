@@ -245,9 +245,15 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   the elbow does not swing out (`track_frames()`: both arms at once, each with its own keys, and the
   handshape blending from one to the next, e.g. fingers opening while the hand moves). An action `face:<id>` on the face's shape keys gives a sign a
   facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face. The
-  character's very wide jacket cuffs hid the hand whenever the wrist bent (SAYA pointing at the
-  chest), so the sleeves are slimmed to end at the wrist with a shape key (`slim_sleeves()`; the
-  model's own mesh is unchanged, and its licence allows changes). The hair and eyebrows are
+  character's jacket sleeves are very wide (a radius of about 5.3 cm round an arm of about 2.4 cm):
+  they made the forearms look big, and the cuffs hid the hand whenever the wrist bent (SAYA pointing
+  at the chest). So the forearm part of the sleeves is slimmed with a shape key (`slim_sleeves()`:
+  about a quarter slimmer from just above the elbow, more towards the cuff, which ends at the wrist;
+  jacket and shirt get the same factors, so the shirt never shows through the jacket, and both stay
+  at least 8 and 4 mm outside the arm, measured all round it). The model's own mesh is unchanged,
+  and its licence allows changes. The posing helpers only ever turn bones: a scale error that had
+  slowly built up on the right hand (it bent that hand's fingers and thumb out of shape) is gone,
+  and `render_signs.py` clears any stray bone location or scale before it renders. The hair and eyebrows are
   recoloured from blue to brown the same way: `hair_colour()` swaps in brown copies of their
   textures (shading kept) and keeps the originals.
   1. `tools/blender/render_signs.py` (run inside Blender) renders every `sign:` action to
@@ -261,11 +267,14 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   APA KHABAR and MAKAN TENGAHARI with both hands). The newer ones: AWAK = index finger pointing
   at the person in front, a small push; APA = left hand open, fingers up, the right index pointing
   at its palm and moving down along it; SUDAH = loose fists at the chest flick down and open, palms
-  down, fingers spread; BUAT APA = both index fingers up, twisting outwards and back twice;
-  APA KHABAR = flat hands (thumbs up) on the upper chest move down and close into thumbs-up fists;
-  MAKAN TENGAHARI = MAKAN (bunched fingertips to the lips), then TENGAH HARI (the right forearm
-  upright, palm forward, its elbow resting on the back of the left hand, which is held flat across
-  the body from the start).
+  down, fingers spread; APA KHABAR = flat hands (thumbs up) on the upper chest move down and close
+  into thumbs-up fists. BUAT APA and MAKAN TENGAHARI follow videos of signers: BUAT APA = both
+  hands in a fist with the thumb straight up (backs of the hands to the viewer, palms to the
+  body), at mid-chest, swinging together to her left and right twice, the thumbs leaning the way
+  they go; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
+  from her right side), then the hand opens and goes up: TENGAH HARI = the right forearm upright,
+  palm towards the middle, the elbow low; only then the left forearm comes across under that
+  elbow.
   SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
   middle of the chest, one small light touch; NAMA = two H hands (index and middle finger straight
   and together, ring and little finger curled, thumb folded across them) in front of the lower

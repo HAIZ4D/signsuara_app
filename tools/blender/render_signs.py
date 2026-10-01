@@ -26,6 +26,9 @@ def render_signs(only=None):
     face = bpy.data.objects[FACE].data.shape_keys
     face.animation_data_create()
     before = (armature.animation_data.action, scene.frame_start, scene.frame_end, scene.render.filepath)
+    for bone in armature.pose.bones:  # actions key rotations only: no stray location or scale may stay
+        bone.location = (0, 0, 0)
+        bone.scale = (1, 1, 1)
     done = []
     try:
         for action in bpy.data.actions:

@@ -40,11 +40,13 @@ def turn(bone, *steps):
 def _rotate_world(bone, rotation):
     bpy.context.view_layer.update()
     pose = armature().pose.bones[bone]
-    m = pose.matrix.copy()
-    joint = m.translation.copy()
-    m = rotation.to_matrix().to_4x4() @ m
+    joint = pose.matrix.translation.copy()
+    # rotation only: copying the whole matrix let tiny scale errors build up over many turns
+    # (the right hand had become 0.68 x 0.95 x 1.55, which bent its fingers and thumb)
+    m = (rotation @ pose.matrix.to_quaternion()).to_matrix().to_4x4()
     m.translation = joint
     pose.matrix = m
+    pose.scale = (1, 1, 1)
     bpy.context.view_layer.update()
 
 
@@ -169,8 +171,9 @@ def handshape(side, name, with_thumb=True):
     index), 'B' (flat, thumb across the palm), 'index' (index finger out), 'Y' (thumb and little
     finger out), 'H' (index and middle finger out together), '5' (open, fingers spread, thumb out),
     'bunched' (fingertips together on the thumb tip, as in MAKAN), 'claw' (a loose fist: fingers
-    half bent, thumb along the index), 'thumb_up' (fist, thumb straight out to the side) and
-    'flat_thumb' (fingers straight together, thumb straight out to the side)."""
+    half bent, thumb along the index), 'thumb_up' (fist, thumb straight out to the side),
+    'flat_thumb' (fingers straight together, thumb straight out to the side) and 'thumb_along'
+    (fist, thumb straight up past the knuckles along the index side, as in BUAT APA)."""
     straight, bent = (0, 0, 0), (88, 100, 60)
     fingers = {
         'relaxed': dict.fromkeys(FINGERS, (8, 10, 6)),
@@ -185,6 +188,7 @@ def handshape(side, name, with_thumb=True):
         'claw': dict.fromkeys(FINGERS, (72, 88, 45)),
         'thumb_up': dict.fromkeys(FINGERS, bent),
         'flat_thumb': dict.fromkeys(FINGERS, straight),
+        'thumb_along': dict.fromkeys(FINGERS, bent),
     }[name]
     spread = {  # sideways (degrees): plus brings a finger towards the middle finger, minus away
         'flat': {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5},
@@ -229,6 +233,8 @@ def handshape(side, name, with_thumb=True):
         return place_thumb(side, mid['Index'] + radial * 0.01 + palm_n * 0.004, bend_range=range(0, 75, 15))
     if name in ('thumb_up', 'flat_thumb'):  # thumb straight out to the side ("up" when the hand is turned)
         return place_thumb(side, base['Index'] + radial * 0.072 - along * 0.005)
+    if name == 'thumb_along':  # thumb straight on along the hand, past the knuckles (a slight bend keeps it straight up)
+        return place_thumb(side, base['Index'] + radial * 0.008 + along * 0.035, bend_range=(10,))
     return 0.0
 
 
@@ -414,20 +420,32 @@ def hands_clash(body='Body'):
 SLIM_SLEEVES = 'SignSuara slim sleeves'
 
 
-def slim_sleeves(body='Body', cuffs=(('N00_007_01_Tops_01_CLOTH', 0.66), ('N00_007_02_Tops_01_CLOTH', 0.72))):
-    """Adds shape key SLIM_SLEEVES (value 1) to the character: the sleeves of the materials in
-    [cuffs] (jacket, shirt) taper towards the wrist (radius x the given factor at the cuff) and end
-    at the wrist. The model's wide cuffs hid the hand whenever the wrist bent (SAYA pointing at the
-    chest). The original mesh is untouched: set the key's value to 0 to get the old sleeves back."""
+def _smooth(a, b, x):
+    t = min(max((x - a) / (b - a), 0.0), 1.0)
+    return t * t * (3 - 2 * t)
+
+
+def slim_sleeves(body='Body', fore=0.72, cuff=0.62, layers=(('N00_007_01_Tops_01_CLOTH', 0.008), ('N00_007_02_Tops_01_CLOTH', 0.004))):
+    """Adds shape key SLIM_SLEEVES (value 1) to the character: the sleeves are slimmer along the
+    whole forearm (radius x [fore], from just above the elbow), taper more towards the cuff (x [cuff])
+    and end at the wrist. The model's wide jacket sleeves made the forearms look big (radius about
+    5.3 cm round an arm of about 2.4 cm), and the cuffs hid the hand whenever the wrist bent (SAYA
+    pointing at the chest). [layers] = (material, gap): jacket and shirt get the same factors, so the
+    shirt never comes out through the jacket, and neither comes closer to the arm's skin than its
+    gap (metres), measured all round the arm. The original mesh is untouched: set the key's value to
+    0 to get the old sleeves back."""
     obj = bpy.data.objects[body]
     me = obj.data
     arm = armature()
-    factor = {i: k for i, m in enumerate(me.materials) for name, k in cuffs if m and m.name.startswith(name)}
-    of_vertex = {}  # vertex -> its cuff factor (the jacket's where jacket and shirt meet)
+    gap_of = {i: g for i, m in enumerate(me.materials) for name, g in layers if m and m.name.startswith(name)}
+    skin_mats = {i for i, m in enumerate(me.materials) if m and 'SKIN' in m.name}
+    cloth, skin = {}, set()
     for p in me.polygons:
-        if p.material_index in factor:
-            for v in p.vertices:
-                of_vertex[v] = min(of_vertex.get(v, 1.0), factor[p.material_index])
+        for v in p.vertices:
+            if p.material_index in gap_of:
+                cloth[v] = max(cloth.get(v, 0.0), gap_of[p.material_index])  # the jacket's gap where they meet
+            elif p.material_index in skin_mats:
+                skin.add(v)
     if not me.shape_keys:
         obj.shape_key_add(name='Basis', from_mix=False)
     if SLIM_SLEEVES in me.shape_keys.key_blocks:
@@ -439,16 +457,32 @@ def slim_sleeves(body='Body', cuffs=(('N00_007_01_Tops_01_CLOTH', 0.66), ('N00_0
         axis = to_local @ arm.data.bones[f'J_Bip_{side}_Hand'].head_local - elbow
         length = axis.length
         axis.normalize()
-        for i, cuff in of_vertex.items():
-            d = me.vertices[i].co - elbow
+        ref = axis.orthogonal().normalized()
+        ref2 = axis.cross(ref)
+
+        def where(co):
+            d = co - elbow
             s = d.dot(axis) / length                   # 0 at the elbow, 1 at the wrist
-            radial = d - axis * d.dot(axis)
-            if s < 0.15 or radial.length > 0.12:       # upper arm and body stay as they are
+            r = d - axis * d.dot(axis)
+            return s, r, round(s * 20), int((math.degrees(math.atan2(r.dot(ref2), r.dot(ref))) + 360) % 360 // 30)
+
+        outer = {}  # (s bin, angle bin) -> the skin's radius there (its outer vertices)
+        for i in skin:
+            s, r, sb, ab = where(me.vertices[i].co)
+            if -0.2 <= s <= 1.1 and r.length < 0.12:
+                outer.setdefault((sb, ab), []).append(r.length)
+        floor = {b: sorted(v)[int(0.9 * (len(v) - 1))] for b, v in outer.items()}
+        for i, gap in cloth.items():
+            s, r, sb, ab = where(me.vertices[i].co)
+            if s < -0.15 or r.length > 0.12:          # upper arm and body stay as they are
                 continue
-            t = min(max((s - 0.3) / 0.6, 0.0), 1.0)
-            k = 1 - (1 - cuff) * t * t * (3 - 2 * t)
-            s = s if s <= 1.0 else 1.0 + (s - 1.0) * 0.4  # the cuff ends near the wrist
-            key.data[i].co = elbow + axis * (s * length) + radial * k
+            k = 1 - (1 - fore) * _smooth(-0.15, 0.15, s)       # slimmer from just above the elbow
+            k *= 1 - (1 - cuff / fore) * _smooth(0.6, 0.95, s)  # and more towards the cuff
+            near = [floor[b] for b in ((sb + ds, (ab + da) % 12) for ds in (-1, 0, 1) for da in (-1, 0, 1)) if b in floor]
+            radius = max(r.length * k, (max(near) + gap) if near else 0.0)
+            radius = min(radius, r.length)                     # never wider than before
+            s = s if s <= 1.0 else 1.0 + (s - 1.0) * 0.4      # the cuff ends near the wrist
+            key.data[i].co = elbow + axis * (s * length) + r.normalized() * radius
     key.value = 1.0
     return key
 
@@ -549,9 +583,12 @@ def snapshot():
 
 
 def restore(shot):
+    """Puts every bone back to the rotations in [shot] (location and scale back to none)."""
     for p in armature().pose.bones:
         p.rotation_mode = 'QUATERNION'
         p.rotation_quaternion = shot[p.name]
+        p.location = (0, 0, 0)
+        p.scale = (1, 1, 1)
     bpy.context.view_layer.update()
 
 
