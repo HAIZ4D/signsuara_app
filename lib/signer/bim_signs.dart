@@ -19,9 +19,14 @@ const kBimSigns = <BimSign>[
   BimSign('saya', malay: ['saya', 'aku'], english: ['i', 'me', 'my']),
   BimSign('nama', malay: ['nama'], english: ['name']),
   BimSign('terima_kasih', malay: ['terima kasih'], english: ['thank you', 'thanks']),
+  BimSign('awak', malay: ['awak', 'kamu', 'anda', 'engkau', 'kau'], english: ['you']),
+  // Greetings and questions
+  BimSign('apa_khabar', malay: ['apa khabar'], english: ['how are you']),
+  BimSign('buat_apa', malay: ['buat apa'], english: ['what are you doing', 'doing what']),
   // Common answers
   BimSign('ya', malay: ['ya'], english: ['yes']),
   BimSign('tidak', malay: ['tidak', 'tak'], english: ['no', 'not']),
+  BimSign('sudah', malay: ['sudah', 'dah'], english: ['already', 'done']),
   // Everyday words
   BimSign('assalamualaikum', malay: ['assalamualaikum']),
   BimSign('baik', malay: ['baik'], english: ['fine', 'good']),
@@ -32,6 +37,7 @@ const kBimSigns = <BimSign>[
   BimSign('apa', malay: ['apa'], english: ['what']),
   BimSign('mana', malay: ['mana'], english: ['where']),
   BimSign('makan', malay: ['makan'], english: ['eat']),
+  BimSign('makan_tengahari', malay: ['makan tengahari', 'makan tengah hari'], english: ['lunch', 'have lunch']),
   BimSign('minum', malay: ['minum'], english: ['drink']),
   BimSign('tandas', malay: ['tandas'], english: ['toilet']),
   BimSign('sakit', malay: ['sakit'], english: ['sick', 'pain', 'hurt']),

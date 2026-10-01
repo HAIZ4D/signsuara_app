@@ -167,7 +167,10 @@ def handshape(side, name, with_thumb=True):
     """Sets the fingers (and thumb) of hand [side] to a handshape, keeping the hand's direction:
     'relaxed', 'fist' (A: thumb up along the index), 'flat' (fingers together, thumb along the
     index), 'B' (flat, thumb across the palm), 'index' (index finger out), 'Y' (thumb and little
-    finger out), 'H' (index and middle finger out together)."""
+    finger out), 'H' (index and middle finger out together), '5' (open, fingers spread, thumb out),
+    'bunched' (fingertips together on the thumb tip, as in MAKAN), 'claw' (a loose fist: fingers
+    half bent, thumb along the index), 'thumb_up' (fist, thumb straight out to the side) and
+    'flat_thumb' (fingers straight together, thumb straight out to the side)."""
     straight, bent = (0, 0, 0), (88, 100, 60)
     fingers = {
         'relaxed': dict.fromkeys(FINGERS, (8, 10, 6)),
@@ -177,9 +180,17 @@ def handshape(side, name, with_thumb=True):
         'index': {'Index': straight, 'Middle': bent, 'Ring': bent, 'Little': bent},
         'Y': {'Index': bent, 'Middle': bent, 'Ring': bent, 'Little': straight},
         'H': {'Index': straight, 'Middle': straight, 'Ring': bent, 'Little': bent},
+        '5': dict.fromkeys(FINGERS, straight),
+        'bunched': {'Index': (52, 30, 14), 'Middle': (50, 30, 14), 'Ring': (52, 32, 14), 'Little': (56, 34, 14)},
+        'claw': dict.fromkeys(FINGERS, (72, 88, 45)),
+        'thumb_up': dict.fromkeys(FINGERS, bent),
+        'flat_thumb': dict.fromkeys(FINGERS, straight),
     }[name]
-    together = name in ('flat', 'B', 'H')
-    spread = {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5} if together else dict.fromkeys(FINGERS, 0)
+    spread = {  # sideways (degrees): plus brings a finger towards the middle finger, minus away
+        'flat': {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5},
+        '5': {'Index': 9, 'Middle': 0, 'Ring': -6, 'Little': -13},
+        'bunched': {'Index': -7, 'Middle': 0, 'Ring': 5, 'Little': 11},
+    }.get('flat' if name in ('flat', 'B', 'H', 'flat_thumb') else name, dict.fromkeys(FINGERS, 0))
     sign = 1 if side == 'L' else -1
     for f, (mcp, pip, dip) in fingers.items():
         turn(f'J_Bip_{side}_{f}1', ('z', spread[f] if side == 'R' else -spread[f]), ('y', sign * mcp))
@@ -208,7 +219,93 @@ def handshape(side, name, with_thumb=True):
         return place_thumb(side, (mid['Ring'] + mid['Little']) / 2 + palm_n * 0.02, bend_range=range(0, 75, 15))
     if name == 'Y':      # thumb spread out sideways
         return place_thumb(side, base['Index'] + radial * 0.07)
+    along = (base['Middle'] - Vector(point(f'J_Bip_{side}_Hand'))).normalized()  # towards the fingertips
+    if name == '5':      # thumb out, between sideways and along the fingers
+        return place_thumb(side, base['Index'] + radial * 0.055 + along * 0.02)
+    if name == 'bunched':  # thumb tip under the index and middle fingertips
+        tips = (Vector(point(f'J_Bip_{side}_Index3', 'tail')) + Vector(point(f'J_Bip_{side}_Middle3', 'tail'))) / 2
+        return place_thumb(side, tips + palm_n * 0.008, bend_range=range(0, 60, 10))
+    if name == 'claw':   # thumb bent, its tip against the side of the bent index
+        return place_thumb(side, mid['Index'] + radial * 0.01 + palm_n * 0.004, bend_range=range(0, 75, 15))
+    if name in ('thumb_up', 'flat_thumb'):  # thumb straight out to the side ("up" when the hand is turned)
+        return place_thumb(side, base['Index'] + radial * 0.072 - along * 0.005)
     return 0.0
+
+
+HAND_PARTS = ('Thumb',) + FINGERS
+
+
+def finger_pose(side, shape):
+    """The finger and thumb rotations of handshape [shape] on hand [side]: {bone: quaternion}. They
+    are the bones' own rotations, so they give the same handshape wherever the arm is."""
+    keep = snapshot()
+    handshape(side, shape)
+    out = {n: q for n, q in snapshot().items() if n.startswith(f'J_Bip_{side}_') and n[8:].startswith(HAND_PARTS)}
+    restore(keep)
+    return out
+
+
+def _hand_axes(side):
+    """The hand's fingers and palm directions as hand_facing() counts them (its T-pose axes, turned
+    the way the hand is turned now)."""
+    bone = f'J_Bip_{side}_Hand'
+    bpy.context.view_layer.update()
+    arm = armature()
+    rest_to_now = arm.pose.bones[bone].matrix.to_quaternion() @ arm.data.bones[bone].matrix_local.to_quaternion().inverted()
+    t_fingers = Vector((1, 0, 0)) if side == 'L' else Vector((-1, 0, 0))
+    return rest_to_now @ t_fingers, rest_to_now @ Vector((0, 0, -1))
+
+
+def hand_now(side):
+    """Where hand [side] is as posed now, as place() arguments: (wrist, fingers, palm, elbow hint).
+    reach() and hand_facing() with these put the arm and hand back as they are now."""
+    fingers, palm = _hand_axes(side)
+    elbow = Vector(point(f'J_Bip_{side}_LowerArm')) - Vector(point(f'J_Bip_{side}_UpperArm'))
+    if side == 'R':
+        elbow.x = -elbow.x  # reach() mirrors the hint for the right arm
+    return Vector(point(f'J_Bip_{side}_Hand')), fingers, palm, elbow
+
+
+def track_frames(tracks, start):
+    """Every frame of [tracks] = {side: [(frame, wrist, fingers, palm, hint, shape), ...]}, each
+    placed from snapshot [start] (bones not in a track stay as there). Per side, between two keys
+    the wrist moves straight (eased in and out), the hand turns the shortest way, and the elbow hint
+    and the handshape blend; before its first key and after its last, a side holds that key. Both
+    arms can move at once. [shape] is a handshape name or a finger_pose() (e.g. of the rest pose).
+    Returns [(frame, snapshot)] for make_action()."""
+    shapes = {}
+    for side, keys in tracks.items():
+        for k in keys:
+            if not isinstance(k[5], dict) and (side, k[5]) not in shapes:
+                shapes[side, k[5]] = finger_pose(side, k[5])
+
+    def shape(side, s):
+        return s if isinstance(s, dict) else shapes[side, s]
+
+    first = min(keys[0][0] for keys in tracks.values())
+    last = max(keys[-1][0] for keys in tracks.values())
+    bones = armature().pose.bones
+    out, twist = [], {}
+    for f in range(first, last + 1):
+        restore(start)
+        for side, keys in tracks.items():
+            a = max((k for k in keys if k[0] <= f), key=lambda k: k[0], default=keys[0])
+            b = min((k for k in keys if k[0] >= f), key=lambda k: k[0], default=keys[-1])
+            t = 0.0 if b[0] == a[0] else (f - a[0]) / (b[0] - a[0])
+            t = t * t * (3 - 2 * t)
+            qa, qb = _hand_frame(a[2], a[3]), _hand_frame(b[2], b[3])
+            if qa.dot(qb) < 0:
+                qb = -qb
+            m = qa.slerp(qb, t).to_matrix()
+            reach(side, Vector(a[1]).lerp(Vector(b[1]), t), Vector(a[4]).lerp(Vector(b[4]), t))
+            hand_facing(side, m.col[0], m.col[1])
+            sa, sb = shape(side, a[5]), shape(side, b[5])
+            for name, q in sa.items():
+                q2 = sb[name]
+                bones[name].rotation_quaternion = q.slerp(-q2 if q.dot(q2) < 0 else q2, t)
+            twist[side] = share_twist(side, prev=twist.get(side))
+        out.append((f, snapshot()))
+    return out
 
 
 def point(bone, end='head'):

@@ -242,7 +242,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   position and direction (the arm is worked out), can move a fingertip onto a touch point (SAYA:
   the index on the chest), find the thumb for a handshape by a quick search, and key every frame
   in between (shortest turns, eased); moves between two signing poses are placed frame by frame so
-  the elbow does not swing out. An action `face:<id>` on the face's shape keys gives a sign a
+  the elbow does not swing out (`track_frames()`: both arms at once, each with its own keys, and the
+  handshape blending from one to the next, e.g. fingers opening while the hand moves). An action `face:<id>` on the face's shape keys gives a sign a
   facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face. The
   character's very wide jacket cuffs hid the hand whenever the wrist bent (SAYA pointing at the
   chest), so the sleeves are slimmed to end at the wrist with a shape key (`slim_sleeves()`; the
@@ -255,8 +256,16 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
      (560 px; the bottom tenth of each frame fades out, because the picture is cut at the skirt).
      The app picks the new clips up by itself.
 - **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
-  `saya`, `nama`, `ya`, `tidak` (posed from BIM Sign Bank pictures, right hand; NAMA with
-  both hands).
+  `saya`, `nama`, `ya`, `tidak`, and then `awak`, `apa`, `sudah`, `buat_apa`, `apa_khabar`,
+  `makan_tengahari` (posed from BIM Sign Bank pictures, right hand; NAMA, APA, SUDAH, BUAT APA,
+  APA KHABAR and MAKAN TENGAHARI with both hands). The newer ones: AWAK = index finger pointing
+  at the person in front, a small push; APA = left hand open, fingers up, the right index pointing
+  at its palm and moving down along it; SUDAH = loose fists at the chest flick down and open, palms
+  down, fingers spread; BUAT APA = both index fingers up, twisting outwards and back twice;
+  APA KHABAR = flat hands (thumbs up) on the upper chest move down and close into thumbs-up fists;
+  MAKAN TENGAHARI = MAKAN (bunched fingertips to the lips), then TENGAH HARI (the right forearm
+  upright, palm forward, its elbow resting on the back of the left hand, which is held flat across
+  the body from the start).
   SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
   middle of the chest, one small light touch; NAMA = two H hands (index and middle finger straight
   and together, ring and little finger curled, thumb folded across them) in front of the lower

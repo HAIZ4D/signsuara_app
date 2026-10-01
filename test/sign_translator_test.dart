@@ -35,6 +35,14 @@ void main() {
     expect(labels('I understand'), ['SAYA', 'FAHAM']);
   });
 
+  test('greetings and questions: the whole phrase is one sign, in Malay and in English', () {
+    expect(labels('Apa khabar? Awak buat apa?'), ['APA KHABAR', 'AWAK', 'BUAT APA']);
+    expect(labels('Saya sudah makan tengah hari'), ['SAYA', 'SUDAH', 'MAKAN TENGAHARI']);
+    expect(labels('Kamu dah makan tengahari?'), ['AWAK', 'SUDAH', 'MAKAN TENGAHARI']);
+    expect(labels('How are you? What are you doing?'), ['APA KHABAR', 'BUAT APA']);
+    expect(labels('Apa? Makan.'), ['APA', 'MAKAN'], reason: 'single words still have their own signs');
+  });
+
   test('spoken endings (-lah, -kah, -nya, -pun) are dropped only when that gives a known word', () {
     expect(labels('Namanya'), ['NAMA']);
     expect(labels('Bolehkah?'), ['BOLEH']);

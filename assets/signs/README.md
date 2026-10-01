@@ -7,7 +7,8 @@ Letter and number clips start and end with the hand up at that place; all others
 in the rest pose.
 The app finds the clips here by itself: adding a file is all it takes.
 
-- Animated WebP with a transparent background, about 400 px, 24 fps.
+- Animated WebP with a transparent background, 560 px, 24 fps; the bottom tenth fades out
+  (the picture is cut at the skirt). `tools/make_sign_clips.py` makes them from the renders.
 - Each clip starts and ends in the pose given above, so clips join without a jump.
 - A held handshape can be a single picture (it is shown 0.4 s).
 - Only signs checked by a fluent BIM signer go here.
