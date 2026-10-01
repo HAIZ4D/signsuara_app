@@ -16,10 +16,8 @@ import '../ui/widgets/note_sheet.dart';
 import '../ui/widgets/speech_rhythm.dart';
 import 'note_summary_view.dart';
 
-/// Opens a note. With [heroTag] (the Notes list) its badge flies over from the list.
-void openNote(BuildContext context, AppServices services, ListenNote note, {Object? heroTag}) =>
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => NoteScreen(services: services, noteId: note.id, heroTag: heroTag)),
+void openNote(BuildContext context, AppServices services, ListenNote note) => Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => NoteScreen(services: services, noteId: note.id)),
     );
 
 /// Copies [note] as plain text, and says so.
@@ -64,11 +62,10 @@ enum _Side { notes, said }
 /// things were said; then Gemini's notes or every sentence heard, picked with the switch at the
 /// bottom ("Aa" makes the words bigger).
 class NoteScreen extends StatefulWidget {
-  const NoteScreen({super.key, required this.services, required this.noteId, this.heroTag});
+  const NoteScreen({super.key, required this.services, required this.noteId});
 
   final AppServices services;
   final String noteId;
-  final Object? heroTag;
 
   /// The note as plain text (Copy): title, Gemini's notes if there are any, then what was said.
   static String asText(ListenNote note) {
@@ -258,7 +255,6 @@ class _NoteScreenState extends State<NoteScreen> {
                       child: _Header(
                         key: _headerKey,
                         note: note,
-                        heroTag: widget.heroTag,
                         onCopy: () => copyNote(context, note),
                         onEdit: () => editNote(context, services, note),
                         onDelete: () => _delete(note),
@@ -301,32 +297,24 @@ class _NoteScreenState extends State<NoteScreen> {
   }
 }
 
-/// The dark header: back, copy, edit and delete; the kind of note and when; the title; how long;
-/// and when things were said.
+/// The dark header: back, copy, edit and delete; the kind of note and when; the title; how long and
+/// in which language; and when things were said.
 class _Header extends StatelessWidget {
   const _Header({
     super.key,
     required this.note,
-    required this.heroTag,
     required this.onCopy,
     required this.onEdit,
     required this.onDelete,
   });
 
   final ListenNote note;
-  final Object? heroTag;
   final VoidCallback onCopy;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  // The badge grows smoothly on its flight from the list (both ends drawn the same).
-  static Widget _flight(BuildContext flight, Animation<double> a, HeroFlightDirection d, BuildContext from, BuildContext to) =>
-      FittedBox(child: (to.widget as Hero).child);
-
   @override
   Widget build(BuildContext context) {
-    final count = note.lines.length;
-    final badge = NoteKindBadge(kind: note.kind, size: 54);
     return HeroPanel(
       bottomPadding: AppSpace.xxl,
       child: Column(
@@ -347,7 +335,7 @@ class _Header extends StatelessWidget {
           ]),
           const SizedBox(height: AppSpace.l),
           Row(children: [
-            if (heroTag case final tag?) Hero(tag: tag, flightShuttleBuilder: _flight, child: badge) else badge,
+            NoteKindBadge(kind: note.kind, size: 54),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -364,15 +352,11 @@ class _Header extends StatelessWidget {
           const SizedBox(height: AppSpace.l),
           Text(note.title, style: AppText.heroTitle.copyWith(fontSize: 24, height: 1.25)),
           const SizedBox(height: 14),
-          Wrap(
-            spacing: AppSpace.s,
-            runSpacing: AppSpace.s,
-            children: [
-              _GlassPill(icon: Icons.schedule_rounded, text: durationLabel(note.duration)),
-              _GlassPill(icon: Icons.notes_rounded, text: '$count ${count == 1 ? 'sentence' : 'sentences'}'),
-              _GlassPill(icon: Icons.translate_rounded, text: note.language.displayName),
-            ],
-          ),
+          Row(children: [
+            Flexible(child: _GlassPill(icon: Icons.schedule_rounded, text: durationLabel(note.duration))),
+            const SizedBox(width: AppSpace.s),
+            Flexible(child: _GlassPill(icon: Icons.translate_rounded, text: note.language.displayName)),
+          ]),
           const SizedBox(height: 18),
           _WhenSaid(note: note),
         ],
@@ -454,7 +438,9 @@ class _GlassPill extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           ExcludeSemantics(child: Icon(icon, size: 15, color: AppColors.turqBright)),
           const SizedBox(width: 6),
-          Flexible(child: Text(text, style: AppText.label.copyWith(color: AppColors.onDark))),
+          Flexible(
+            child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.label.copyWith(color: AppColors.onDark)),
+          ),
         ]),
       );
 }

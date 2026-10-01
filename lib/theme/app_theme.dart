@@ -18,6 +18,7 @@ abstract final class AppColors {
   static const onYellowInk = Color(0xFFB07F00); // yellow-ish text on white
   static const yellowWash = Color(0xFFFFF3CC); // pale yellow behind important details (onYellow text)
   static const turqWash = Color(0xFFE6F8FA); // pale turquoise behind explained words and found words
+  static const blueWash = Color(0xFFE8EEFB); // pale blue behind a class note's icon
   static const turqInk = Color(0xFF006B77); // turquoise text on white or turqWash (contrast 5.7:1 or more)
   static const skeleton = Color(0xFFE6EDF7); // placeholder lines while Gemini writes
   static const skeletonShine = Color(0xFFF8FAFE); // the light that sweeps over them

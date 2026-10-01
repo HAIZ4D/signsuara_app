@@ -112,7 +112,7 @@ void main() {
     expect(find.text('Club meeting'), findsOneWidget);
     expect(find.text('Consultation · 9:30 AM'), findsOneWidget);
     expect(find.text('12 min'), findsOneWidget);
-    expect(find.text('2 sentences'), findsOneWidget);
+    expect(find.text('2 sentences'), findsNothing, reason: 'one quiet line: how long, and Gemini notes');
     expect(find.text('Makan ubat ini dua kali sehari'), findsOneWidget, reason: 'the first words as a preview');
     expect(find.text('2'), findsOneWidget, reason: 'the number of notes');
     expect(find.text('57 min'), findsOneWidget, reason: 'the time listened in all');
@@ -121,7 +121,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Consultation'), findsOneWidget, reason: 'the kind, at the top');
     expect(find.text('12 min'), findsOneWidget);
-    expect(find.text('2 sentences'), findsOneWidget);
     expect(find.text('Malay'), findsOneWidget);
     expect(find.text('Clear notes by Gemini'), findsOneWidget, reason: 'it opens on the Gemini side');
 

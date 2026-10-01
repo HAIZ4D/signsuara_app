@@ -114,25 +114,26 @@ of the chat or its history.
   Continue button. The phone stays silent and the screen stays on for the whole session. While it
   runs, Chat's microphone is busy.
 - **Kept as a note** (`lib/listen/listen_note.dart`): after Stop you choose what it was (Meeting,
-  Class, Consultation, Program or Other) and a title, or throw it away. The note is also saved
+  Class, Consultation, Program or Other) and a title (by default the kind, date and time, like
+  "Meeting · Thu 1 Oct, 3:51 PM": a real date, as titles are read again later), or throw it away.
+  The note is also saved
   every 3 sentences while the session runs, so a closed app loses little. Signed in: in the
   account (`users/{uid}/notes`, see "Firebase setup"); guest: kept until the app closes.
 - **Notes tab** (`lib/screens/notes_screen.dart`, replaces the old Learn placeholder): every note,
   newest first and grouped by day. The numbers at the top are real (notes, time listened, notes
   with Gemini notes). **Search** looks in titles, sentences and Gemini's notes as you type and
-  marks the words it found; **chips** show one kind of note. Each card has its kind's colour on the
-  edge, the title, a **speech timeline** ("when words were said", `lib/ui/widgets/speech_rhythm.dart`:
-  the session cut into equal slices of time, each bar as tall as the words heard in it; real data,
-  not a sound level), Gemini's summary or the first words, and its length; ⋮ opens, copies, edits or
-  deletes it without opening it (no swipe gestures). Home shows the latest note, and a Notes tile
-  with the count.
+  marks the words it found; **chips** show one kind of note. Each card is kept quiet: a small icon
+  for its kind, the title, Gemini's summary or the first words, and one line with how long it was
+  and "Gemini notes" when there are some; ⋮ opens, copies, edits or deletes it without opening it
+  (no swipe gestures). Home shows the latest note, and a Notes tile with the count.
 - **A note** (`lib/screens/note_screen.dart`, `note_summary_view.dart`): a dark header with the
-  kind, date, title, length, language and a big speech timeline; a floating switch at the bottom
+  kind, date, title, length and language, and a **speech timeline** ("when words were said",
+  `lib/ui/widgets/speech_rhythm.dart`: the session cut into equal slices of time, each bar as tall
+  as the words heard in it; real data, not a sound level); a floating switch at the bottom
   between **Gemini notes** and **What was said** (every sentence on a timeline with its time); and
   **Aa** for bigger words (three steps, on top of the phone's own text size). Copy as text, edit
-  (kind and title, with the same sheet as after Stop) or delete. The badge flies over from the list
-  when a note opens; every animation stands still when the phone's "remove animations" setting is
-  on.
+  (kind and title, with the same sheet as after Stop) or delete. Every animation stands still when
+  the phone's "remove animations" setting is on.
 - **Summaries by Gemini** (`lib/listen/note_summary.dart`, `lib/cloud/gemini_summarizer.dart`):
   only when you tap **Summarise with Gemini** in a note. Gemini (model `gemini-3.8-flash`, through
   Firebase AI Logic) gets the note's sentences with their times and is asked to write, in the
@@ -280,7 +281,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 179 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 180 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 

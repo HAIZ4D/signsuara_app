@@ -447,12 +447,10 @@ class _LatestNote extends StatelessWidget {
   }
 }
 
-/// When and how long; the day is left out when the title already says it (the default title).
+/// When and how long; when is left out if the title already says it (the default title has the time).
 String _detail(ListenNote note) {
-  final when = dayAndTime(note.startedAt);
-  final count = note.lines.length;
-  final length = '${durationLabel(note.duration)} · $count ${count == 1 ? 'sentence' : 'sentences'}';
-  return note.title.contains(when) ? length : '$when · $length';
+  final length = durationLabel(note.duration);
+  return note.title.contains(clockTime(note.startedAt)) ? length : '${dayAndTime(note.startedAt)} · $length';
 }
 
 /// Faint dot pattern (design: radial-gradient dots on .hx-daily).

@@ -20,14 +20,16 @@ String clockTime(DateTime t) {
   return '$hour:${t.minute.toString().padLeft(2, '0')} ${t.hour < 12 ? 'AM' : 'PM'}';
 }
 
+/// "Mon 28 Sep": a date that stays right when it is saved (in a note's title).
+String shortDate(DateTime t) => '${_weekdays[t.weekday - 1].substring(0, 3)} ${t.day} ${_months[t.month - 1].substring(0, 3)}';
+
 /// "Today", "Yesterday", "Mon 28 Sep", or "Mon 28 Sep 2025" for another year.
 String dayName(DateTime t, {DateTime? now}) {
   final today = now ?? DateTime.now();
   final days = DateTime.utc(today.year, today.month, today.day).difference(DateTime.utc(t.year, t.month, t.day)).inDays;
   if (days == 0) return 'Today';
   if (days == 1) return 'Yesterday';
-  final short = '${_weekdays[t.weekday - 1].substring(0, 3)} ${t.day} ${_months[t.month - 1].substring(0, 3)}';
-  return t.year == today.year ? short : '$short ${t.year}';
+  return t.year == today.year ? shortDate(t) : '${shortDate(t)} ${t.year}';
 }
 
 /// "Today, 10:32 AM"

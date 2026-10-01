@@ -43,6 +43,10 @@ void main() {
   Future<List<ListenNote>> saved() => store.watch().first;
   List<String> lines() => [for (final l in session.lines) l.text];
 
+  test('a default title has the real date, not "Today" (it is read again on later days)', () {
+    expect(ListenSession.defaultTitle(NoteKind.lesson, DateTime(2026, 10, 1, 15, 51)), 'Class · Thu 1 Oct, 3:51 PM');
+  });
+
   test('each finished sentence becomes a line, and listening starts again', () async {
     await session.start(SpeechLanguage.english);
     expect(listens, [SpeechLanguage.english]);

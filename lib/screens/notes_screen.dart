@@ -9,7 +9,6 @@ import '../ui/widgets/gradient_button.dart';
 import '../ui/widgets/hero_panel.dart';
 import '../ui/widgets/motion.dart';
 import '../ui/widgets/note_kind_icon.dart';
-import '../ui/widgets/speech_rhythm.dart';
 import 'note_screen.dart';
 
 /// Notes tab (README "Listen and Notes"): every Listen session, newest first and grouped by day,
@@ -74,7 +73,7 @@ class _NotesScreenState extends State<NotesScreen> {
     if (!mounted) return;
     switch (choice) {
       case 'open':
-        openNote(context, services, note, heroTag: _NoteCard.heroTag(note));
+        openNote(context, services, note);
       case 'copy':
         await copyNote(context, note);
       case 'edit':
@@ -125,7 +124,7 @@ class _NotesScreenState extends State<NotesScreen> {
                         child: _NoteCard(
                           note: note,
                           query: query,
-                          onOpen: () => openNote(context, services, note, heroTag: _NoteCard.heroTag(note)),
+                          onOpen: () => openNote(context, services, note),
                           onMore: () => _more(note),
                         ),
                       ),
@@ -417,9 +416,8 @@ class _DayHeader extends StatelessWidget {
       );
 }
 
-/// One note: its kind's colour on the edge, kind and time, title, when things were said, a preview
-/// (Gemini's summary, the first sentence, or where the search found it) and its length. Tap opens
-/// it; ⋮ has its actions.
+/// One note, quietly: its kind's icon, the title, the first words or Gemini's summary, and one line
+/// with how long it was and whether Gemini made notes. Tap opens it; ⋮ has its actions.
 class _NoteCard extends StatefulWidget {
   const _NoteCard({required this.note, required this.query, required this.onOpen, required this.onMore});
 
@@ -427,9 +425,6 @@ class _NoteCard extends StatefulWidget {
   final String query; // the search, lower case ('' = none)
   final VoidCallback onOpen;
   final VoidCallback onMore;
-
-  /// The badge's tag for its flight into the note.
-  static Object heroTag(ListenNote note) => 'note-badge-${note.id}';
 
   @override
   State<_NoteCard> createState() => _NoteCardState();
@@ -443,13 +438,14 @@ class _NoteCardState extends State<_NoteCard> {
     final note = widget.note;
     final query = widget.query;
     final summary = note.summary;
-    final count = note.lines.length;
     final found = query.isEmpty ? null : _found(note, query);
     final preview = found != null && found != note.title ? _near(found, query) : summary?.overview ?? note.lines.firstOrNull?.text;
     final time = clockTime(note.startedAt);
-    final when = note.title.contains(time) ? note.kind.label : '${note.kind.label} · $time'; // a default title has the time
-    final sentences = '$count ${count == 1 ? 'sentence' : 'sentences'}';
-    final (edge, _, _) = noteKindColours(note.kind);
+    final kindAndTime = note.title.contains(time) ? null : '${note.kind.label} · $time'; // a default title says both
+    final length = durationLabel(note.duration);
+    final soft = AppText.small.copyWith(color: AppColors.inkSoft);
+    final previewStyle = AppText.body.copyWith(color: AppColors.inkSoft, height: 1.5);
+    final (wash, ink) = noteKindTint(note.kind);
     return AnimatedScale(
       scale: _pressed ? 0.98 : 1,
       duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.quick,
@@ -462,63 +458,64 @@ class _NoteCardState extends State<_NoteCard> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              Positioned(left: 0, top: 0, bottom: 0, width: 5, child: DecoratedBox(decoration: BoxDecoration(gradient: edge))),
               Semantics(
                 button: true,
-                label: '${note.title}. $when, ${durationLabel(note.duration)}, $sentences'
-                    '${summary != null ? ', with Gemini notes' : ''}',
+                label: '${note.title}. ${note.kind.label}, $time, $length${summary != null ? ', with Gemini notes' : ''}',
                 excludeSemantics: true,
                 child: InkWell(
                   onTap: widget.onOpen,
                   onHighlightChanged: (on) => setState(() => _pressed = on),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(19, 16, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Hero(tag: _NoteCard.heroTag(note), child: NoteKindBadge(kind: note.kind)),
+                            Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(color: wash, borderRadius: BorderRadius.circular(AppRadius.sm)),
+                              child: Icon(noteKindIcon(note.kind), size: 21, color: ink),
+                            ),
                             const SizedBox(width: AppSpace.m),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 34), // room for ⋮
-                                    child: Text(when, style: AppText.small.copyWith(color: AppColors.inkSoft)),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 34),
-                                    child: Text.rich(
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 32), // room for ⋮
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text.rich(
                                       _marked(note.title, query, AppText.section.copyWith(fontSize: 16.5, height: 1.3)),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  ),
-                                  const SizedBox(height: AppSpace.s),
-                                  SpeechRhythm(note: note, color: AppColors.turq, height: 22),
-                                ],
+                                    if (kindAndTime != null) ...[
+                                      const SizedBox(height: 2),
+                                      Text(kindAndTime, style: soft),
+                                    ],
+                                  ],
+                                ),
                               ),
                             ),
                           ],
                         ),
                         if (preview != null) ...[
                           const SizedBox(height: AppSpace.m),
-                          _Preview(text: preview, query: query, gemini: preview == summary?.overview),
+                          query.isEmpty
+                              ? Text(preview, maxLines: 2, overflow: TextOverflow.ellipsis, style: previewStyle)
+                              : Text.rich(_marked(preview, query, previewStyle), maxLines: 3, overflow: TextOverflow.ellipsis),
                         ],
-                        const SizedBox(height: AppSpace.m),
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            _Meta(icon: Icons.schedule_rounded, text: durationLabel(note.duration)),
-                            _Meta(icon: Icons.notes_rounded, text: sentences),
-                            if (summary != null) const _GeminiTag(),
-                          ],
-                        ),
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: AppColors.line),
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          const Icon(Icons.schedule_rounded, size: 15, color: AppColors.inkSoft),
+                          const SizedBox(width: 6),
+                          Expanded(child: Text(length, maxLines: 1, overflow: TextOverflow.ellipsis, style: soft)),
+                          if (summary != null) const _GeminiTag(),
+                        ]),
                       ],
                     ),
                   ),
@@ -526,7 +523,7 @@ class _NoteCardState extends State<_NoteCard> {
               ),
               Positioned(
                 top: 4,
-                right: 4,
+                right: 2,
                 child: IconButton(
                   tooltip: 'More for ${note.title}',
                   icon: const Icon(Icons.more_vert_rounded, color: AppColors.inkSoft),
@@ -545,59 +542,6 @@ class _NoteCardState extends State<_NoteCard> {
     final at = text.toLowerCase().indexOf(query);
     return at > 50 ? '…${text.substring(at - 30)}' : text;
   }
-}
-
-/// The card's preview: Gemini's summary on a tinted panel with its sparkle, or plain words.
-class _Preview extends StatelessWidget {
-  const _Preview({required this.text, required this.query, required this.gemini});
-
-  final String text;
-  final String query;
-  final bool gemini;
-
-  @override
-  Widget build(BuildContext context) {
-    final style = AppText.body.copyWith(color: AppColors.inkSoft, fontSize: 13.5, height: 1.45);
-    final words = query.isEmpty
-        ? Text(text, maxLines: 3, overflow: TextOverflow.ellipsis, style: style)
-        : Text.rich(_marked(text, query, style), maxLines: 3, overflow: TextOverflow.ellipsis);
-    if (!gemini) return words;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(AppRadius.sm)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: ExcludeSemantics(child: Icon(Icons.auto_awesome_rounded, size: 15, color: AppColors.turqDeep)),
-          ),
-          const SizedBox(width: AppSpace.s),
-          Expanded(child: words),
-        ],
-      ),
-    );
-  }
-}
-
-/// A small fact on a card ("12 min").
-class _Meta extends StatelessWidget {
-  const _Meta({required this.icon, required this.text});
-
-  final IconData icon;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.fromLTRB(8, 5, 10, 5),
-        decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(AppRadius.pill)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 14, color: AppColors.inkSoft),
-          const SizedBox(width: 5),
-          Flexible(child: Text(text, style: AppText.small.copyWith(color: AppColors.inkSoft))),
-        ]),
-      );
 }
 
 /// "Gemini notes": this note has a summary.

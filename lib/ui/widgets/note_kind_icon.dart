@@ -21,6 +21,15 @@ IconData noteKindIcon(NoteKind kind) => switch (kind) {
       NoteKind.other => (AppGradients.night, AppShadows.blueTile, AppColors.onDark),
     };
 
+/// Each kind's quiet colours for the Notes list: a pale background and the icon colour on it.
+(Color, Color) noteKindTint(NoteKind kind) => switch (kind) {
+      NoteKind.meeting => (AppColors.turqWash, AppColors.turqInk),
+      NoteKind.lesson => (AppColors.blueWash, AppColors.royal),
+      NoteKind.consultation => (AppColors.yellowWash, AppColors.onYellowInk),
+      NoteKind.program => (AppColors.turqWash, AppColors.turqDeep),
+      NoteKind.other => (AppColors.surface2, AppColors.blue),
+    };
+
 /// The rounded square behind a note's icon.
 class NoteKindBadge extends StatelessWidget {
   const NoteKindBadge({super.key, required this.kind, this.size = 46});

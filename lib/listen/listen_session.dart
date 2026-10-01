@@ -55,7 +55,9 @@ class ListenSession extends ChangeNotifier {
   List<NoteLine> get lines => List.unmodifiable(_lines);
 
   /// "Meeting · Today, 10:05 AM"
-  static String defaultTitle(NoteKind kind, DateTime startedAt) => '${kind.label} · ${dayAndTime(startedAt)}';
+  // A real date, not "Today": the title is saved and read again on later days.
+  static String defaultTitle(NoteKind kind, DateTime startedAt) =>
+      '${kind.label} · ${shortDate(startedAt)}, ${clockTime(startedAt)}';
 
   /// Start: a new session.
   Future<void> start(SpeechLanguage language) async {
