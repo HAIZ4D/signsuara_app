@@ -55,19 +55,9 @@ class _AppShellState extends State<AppShell> {
         children: [
           IndexedStack(
             index: _tab,
+            // Tabs out of sight keep their state but pause their animations (smoother, less battery).
             children: [
-              HomeScreen(
-                services: services,
-                onOpenTab: _go,
-                onOpenProfile: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(builder: (_) => ProfileScreen(services: services)),
-                ),
-              ),
-              ConversationScreen(services: services),
-              HearingScreen(services: services),
-              CustomGesturesPage(
-                  gestures: services.gestures, session: services.session, ble: services.ble, backup: services.backup),
-              NotesScreen(services: services, onOpenListen: () => _go(HomeScreen.hearingTab)),
+              for (final (i, tab) in _tabs(context).indexed) TickerMode(enabled: i == _tab, child: tab),
             ],
           ),
           // Hidden while the keyboard is open (Notes search): it would ride up and cover the results.
@@ -82,4 +72,19 @@ class _AppShellState extends State<AppShell> {
       ),
     );
   }
+
+  List<Widget> _tabs(BuildContext context) => [
+        HomeScreen(
+          services: services,
+          onOpenTab: _go,
+          onOpenProfile: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => ProfileScreen(services: services)),
+          ),
+        ),
+        ConversationScreen(services: services),
+        HearingScreen(services: services),
+        CustomGesturesPage(
+            gestures: services.gestures, session: services.session, ble: services.ble, backup: services.backup),
+        NotesScreen(services: services, onOpenListen: () => _go(HomeScreen.hearingTab)),
+      ];
 }

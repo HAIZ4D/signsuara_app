@@ -231,17 +231,19 @@ abstract final class AppRadius {
   static const pill = 999.0;
 }
 
+/// Blurs kept moderate: a big blur costs the graphics chip work for every pixel it covers, in every
+/// frame (budget phones then drop frames; see README "Smoothness").
 abstract final class AppShadows {
-  static const card = [BoxShadow(color: Color(0x73002B66), blurRadius: 40, spreadRadius: -22, offset: Offset(0, 18))];
-  static const pop = [BoxShadow(color: Color(0x8C002B66), blurRadius: 60, spreadRadius: -20, offset: Offset(0, 26))];
-  static const turqGlow = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 40, spreadRadius: -18, offset: Offset(0, 24))];
+  static const card = [BoxShadow(color: Color(0x73002B66), blurRadius: 26, spreadRadius: -13, offset: Offset(0, 13))];
+  static const pop = [BoxShadow(color: Color(0x8C002B66), blurRadius: 36, spreadRadius: -13, offset: Offset(0, 18))];
+  static const turqGlow = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 26, spreadRadius: -11, offset: Offset(0, 16))];
   static const sunGlow = [BoxShadow(color: Color(0xE6FFC82D), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
   static const turqTile = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
   static const blueTile = [BoxShadow(color: Color(0xE6002B66), blurRadius: 16, spreadRadius: -8, offset: Offset(0, 8))];
-  static const nav = [BoxShadow(color: Color(0xA6001440), blurRadius: 40, spreadRadius: -14, offset: Offset(0, 22))];
+  static const nav = [BoxShadow(color: Color(0xA6001440), blurRadius: 26, spreadRadius: -9, offset: Offset(0, 15))];
   static const bubbleMe = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 24, spreadRadius: -14, offset: Offset(0, 12))];
-  static const sunCta = [BoxShadow(color: Color(0xE6F2A900), blurRadius: 36, spreadRadius: -18, offset: Offset(0, 22))];
-  static const dock = [BoxShadow(color: Color(0xCC002B66), blurRadius: 40, spreadRadius: -18, offset: Offset(0, 20))];
+  static const sunCta = [BoxShadow(color: Color(0xE6F2A900), blurRadius: 26, spreadRadius: -12, offset: Offset(0, 16))];
+  static const dock = [BoxShadow(color: Color(0xCC002B66), blurRadius: 26, spreadRadius: -11, offset: Offset(0, 14))];
 }
 
 abstract final class AppMotion {

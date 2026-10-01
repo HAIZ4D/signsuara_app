@@ -278,6 +278,36 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 - Hardware note: the thumb flex sensor occasionally reads 4095 (5 of 170 recordings), which
   suggests a loose contact.
 
+## Smoothness
+
+Measured on the development phone, a Samsung Galaxy A13 (Exynos 850, Mali-G52 graphics, 60 Hz
+screen), release build, power saving on, with `tools/frame_rate.py` (the times Android showed the
+app's frames; no app changes) while the screen's animations run:
+
+| Screen | Before | After | Late frames |
+|---|---|---|---|
+| Home | 34 fps | 49–50 fps | 78 % → about 20 % |
+| Gestures | 51 fps | 54 fps | 16 % → 10 % |
+| Notes | 60 fps | 60 fps | 0 % |
+
+Flutter's own frame timings showed why: building a frame took about 2.5 ms, but drawing it on the
+graphics chip took about 21 ms on Home (a frame has 16.7 ms). What helped, without changing the
+look:
+
+- **No blur on moving things**: the Home voice line's glow is drawn with wide faint lines instead
+  of a blur filter (34 → 45 fps on Home by itself).
+- **Moderate shadow blurs** (`AppShadows`): a big blur costs work for every pixel it covers, in
+  every frame (another ~1.5 ms per frame on every screen).
+- **Moving parts on their own layers** (`lib/ui/widgets/motion.dart`): the header's colour blobs
+  and the shine are drawn once and only moved; out-of-sight tabs pause their animations
+  (`TickerMode` in `lib/app/app_shell.dart`), which also saves battery.
+- Small things: the dotted pattern drawn in one call, no extra transparency layer on the waveform.
+
+For the smoothest app (e.g. a demo): install a **release build** (`flutter build apk --release`,
+then `adb install -r build/app/outputs/flutter-apk/app-release.apk`, or `flutter run --release`;
+debug builds are much slower), turn **power saving off**, and avoid a phone that is hot from
+charging. Home stays the busiest screen: everything on it is redrawn while its animations run.
+
 ## Project structure
 
 | Path | Contents |
@@ -296,7 +326,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
-| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
+| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones; `frame_rate.py` measures how smooth the app runs on a phone |
 | `test/` | 189 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run

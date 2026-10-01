@@ -85,7 +85,7 @@ class _RibbonPainter extends CustomPainter {
     final middle = size.height / 2;
     for (final wave in _waves) {
       final path = Path();
-      for (var x = 0.0; x <= size.width; x += 3) {
+      for (var x = 0.0; x <= size.width; x += 6) {
         final u = x / size.width;
         final taper = pow(sin(pi * u), 1.4).toDouble(); // the wave fades into both edges
         final y = middle +
@@ -101,14 +101,15 @@ class _RibbonPainter extends CustomPainter {
         ).createShader(Offset.zero & size);
       }
 
-      // A soft glow under a fine line.
+      // A soft glow under a fine line: one wide faint stroke (a real blur costs the phone too much
+      // to redraw 60 times a second).
       canvas.drawPath(
         path,
         Paint()
-          ..shader = fade(0.38 + 0.3 * surge)
+          ..shader = fade(0.2 + 0.18 * surge)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = wave.width * 3.5
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+          ..strokeWidth = wave.width * 4
+          ..strokeCap = StrokeCap.round,
       );
       canvas.drawPath(
         path,

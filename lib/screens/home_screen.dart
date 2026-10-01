@@ -1,3 +1,5 @@
+import 'dart:ui' show PointMode;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -258,10 +260,8 @@ class _StartCta extends StatelessWidget {
                         right: -10,
                         bottom: -8,
                         width: 190,
-                        child: Opacity(
-                          opacity: 0.45,
-                          child: Waveform(color: AppColors.onDark.withValues(alpha: 0.55), height: 64),
-                        ),
+                        // The faintness is in the colour (an Opacity layer would be redrawn every frame).
+                        child: Waveform(color: AppColors.onDark.withValues(alpha: 0.25), height: 64),
                       ),
                       const Positioned.fill(child: ShineSweep()),
                       Padding(
@@ -474,12 +474,18 @@ String _detail(ListenNote note) {
 class _DotGrid extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final dot = Paint()..color = AppColors.onDark.withValues(alpha: 0.1);
-    for (var x = 1.0; x < size.width; x += 14) {
-      for (var y = 1.0; y < size.height; y += 14) {
-        canvas.drawCircle(Offset(x, y), 1, dot);
-      }
-    }
+    // All dots in one call (one by one was ~190 draws in every frame).
+    canvas.drawPoints(
+      PointMode.points,
+      [
+        for (var x = 1.0; x < size.width; x += 14)
+          for (var y = 1.0; y < size.height; y += 14) Offset(x, y),
+      ],
+      Paint()
+        ..color = AppColors.onDark.withValues(alpha: 0.1)
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round,
+    );
   }
 
   @override

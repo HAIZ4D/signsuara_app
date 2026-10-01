@@ -27,19 +27,24 @@ class _AuroraState extends State<Aurora> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget _blob(double size, Color color, double opacity) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [color.withValues(alpha: opacity), color.withValues(alpha: 0)]),
+  // Drawn once and kept: the animation below only moves these pictures (cheap for the phone).
+  Widget _blob(double size, Color color, double opacity) => RepaintBoundary(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [color.withValues(alpha: opacity), color.withValues(alpha: 0)]),
+          ),
         ),
       );
 
   @override
   Widget build(BuildContext context) {
+    final blobs = (_blob(260, AppColors.turq, 0.55), _blob(190, AppColors.yellow, 0.3), _blob(150, AppColors.royal, 0.4));
     return IgnorePointer(
-      child: AnimatedBuilder(
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
         animation: _c,
         builder: (context, _) {
           final t = Curves.easeInOut.transform(_c.value);
@@ -47,16 +52,13 @@ class _AuroraState extends State<Aurora> with SingleTickerProviderStateMixin {
           return Stack(
             clipBehavior: Clip.none,
             children: [
-              Positioned(top: -90, right: -60, child: Transform.translate(offset: drift, child: _blob(260, AppColors.turq, 0.55))),
-              Positioned(bottom: -70, left: -40, child: Transform.translate(offset: -drift, child: _blob(190, AppColors.yellow, 0.3))),
-              Positioned(
-                top: 60,
-                left: 150,
-                child: Transform.scale(scale: 1 + 0.15 * t, child: _blob(150, AppColors.royal, 0.4)),
-              ),
+              Positioned(top: -90, right: -60, child: Transform.translate(offset: drift, child: blobs.$1)),
+              Positioned(bottom: -70, left: -40, child: Transform.translate(offset: -drift, child: blobs.$2)),
+              Positioned(top: 60, left: 150, child: Transform.scale(scale: 1 + 0.15 * t, child: blobs.$3)),
             ],
           );
         },
+        ),
       ),
     );
   }
@@ -143,14 +145,16 @@ class _ShineSweepState extends State<ShineSweep> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: AnimatedBuilder(
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
         animation: _c,
         builder: (context, _) {
           // Idle for the first 60 % of the cycle, then sweep left → right.
           final u = ((_c.value - 0.6) / 0.4).clamp(0.0, 1.0);
           return FractionalTranslation(
             translation: Offset(-1 + 2 * u, 0),
-            child: DecoratedBox(
+            child: RepaintBoundary(
+              child: DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: const Alignment(-1, -0.3),
@@ -164,9 +168,11 @@ class _ShineSweepState extends State<ShineSweep> with SingleTickerProviderStateM
                 ),
               ),
               child: const SizedBox.expand(),
+              ),
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -260,7 +266,8 @@ class _PulseDotState extends State<PulseDot> with SingleTickerProviderStateMixin
       height: widget.size,
       decoration: BoxDecoration(color: widget.color, shape: BoxShape.circle),
     );
-    return SizedBox(
+    return RepaintBoundary(
+      child: SizedBox(
       width: widget.size,
       height: widget.size,
       child: Stack(
@@ -276,6 +283,7 @@ class _PulseDotState extends State<PulseDot> with SingleTickerProviderStateMixin
           ),
           dot,
         ],
+      ),
       ),
     );
   }
@@ -372,7 +380,8 @@ class _SpinState extends State<Spin> with SingleTickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => RotationTransition(turns: _c, child: widget.child);
+  Widget build(BuildContext context) =>
+      RepaintBoundary(child: RotationTransition(turns: _c, child: RepaintBoundary(child: widget.child)));
 }
 
 /// Decorative animated bars (design: Waveform). Not a real audio level.
@@ -405,7 +414,8 @@ class _WaveformState extends State<Waveform> with SingleTickerProviderStateMixin
   }
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context) => RepaintBoundary(
+        child: SizedBox(
         height: widget.height,
         width: double.infinity,
         child: AnimatedBuilder(
@@ -413,6 +423,7 @@ class _WaveformState extends State<Waveform> with SingleTickerProviderStateMixin
           builder: (context, _) => CustomPaint(
             painter: _WavePainter(_c.value * 1200, _phases, widget.color, widget.active),
           ),
+        ),
         ),
       );
 }
