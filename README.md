@@ -272,7 +272,10 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 ## Build and run
 
 Requirements: Flutter 3.47 (Dart 3.13), an Android phone with Android 7.0 or newer and
-Bluetooth LE. The Android build uses Gradle 8.14 and the Android Gradle Plugin 8.13.
+Bluetooth LE. The Android build uses the versions Flutter 3.47 gives new projects: Gradle 9.3,
+the Android Gradle Plugin 9.1, Kotlin 2.4 and NDK 28.2. Flutter still warns that several plugins
+(the Firebase ones, `flutter_tts`, `speech_to_text`, …) load Kotlin the old way; only their
+authors can change that, and the build works.
 
 ```
 flutter pub get
@@ -334,7 +337,9 @@ Firebase project:
    asks for. It is paid per use on the Blaze plan, so also set a **budget with alerts** in Google
    Cloud Billing (for example RM10 a month). No API key goes in the app: Firebase AI Logic uses
    the app's own Firebase project. The model is one constant, `GeminiSummarizer.model`; Google
-   retires old Gemini models, so check that it is still offered.
+   retires old Gemini models, so check that it is still offered. Keep App Check **enforcement**
+   for Firebase AI Logic **off** (App Check → APIs): the app does not use App Check yet, so with
+   enforcement on, Gemini refuses every summary ("Firebase App Check token is invalid").
 
 Saved per user:
 - `users/{uid}`: name, email, photo link, first and last sign-in time, `username` when the name
