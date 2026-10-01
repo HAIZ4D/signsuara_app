@@ -63,6 +63,15 @@ void main() {
     expect(kept.lines, hasLength(2));
   });
 
+  test('ticks on the to-do list are kept with the notes; older notes have none', () {
+    final summary = NoteSummary.fromJson(answer(good), madeAt: madeAt, model: 'm')!;
+    expect(summary.done, isEmpty);
+    expect(note.copyWith(summary: summary).toMap()['summary'], isNot(contains('done')), reason: 'nothing stored before a tick');
+    final back = ListenNote.fromMap('n1', note.copyWith(summary: summary.withDone({0})).toMap())!;
+    expect(back.summary!.done, {0});
+    expect(back.summary!.actions, summary.actions);
+  });
+
   test("Gemini is asked for simple words in the note's language, only what was said, numbers exact", () {
     final prompt = summaryPrompt(note);
     expect(prompt, contains('read them in Bahasa Melayu'));

@@ -17,6 +17,10 @@ abstract final class AppColors {
   static const onYellow = Color(0xFF3A2C00); // text on yellow
   static const onYellowInk = Color(0xFFB07F00); // yellow-ish text on white
   static const yellowWash = Color(0xFFFFF3CC); // pale yellow behind important details (onYellow text)
+  static const turqWash = Color(0xFFE6F8FA); // pale turquoise behind explained words and found words
+  static const turqInk = Color(0xFF006B77); // turquoise text on white or turqWash (contrast 5.7:1 or more)
+  static const skeleton = Color(0xFFE6EDF7); // placeholder lines while Gemini writes
+  static const skeletonShine = Color(0xFFF8FAFE); // the light that sweeps over them
 
   // Light app surfaces
   static const bg = Color(0xFFF3F6FB);
@@ -164,6 +168,13 @@ abstract final class AppGradients {
     Color(0x0013C6D6),
     AppColors.yellow,
   ], stops: [0, 0.35, 0.55, 0.8, 1]);
+  /// Gemini's mark: turquoise running into yellow (the edge of a summary).
+  static const gemini = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [AppColors.turqBright, AppColors.turq, AppColors.yellow],
+    stops: [0, 0.55, 1],
+  );
   static const finger = LinearGradient(
     begin: Alignment.bottomCenter,
     end: Alignment.topCenter,
@@ -233,6 +244,7 @@ abstract final class AppShadows {
 }
 
 abstract final class AppMotion {
+  static const quick = Duration(milliseconds: 120); // press feedback
   static const fast = Duration(milliseconds: 250);
   static const medium = Duration(milliseconds: 450);
   static const slow = Duration(milliseconds: 600);
@@ -261,6 +273,11 @@ abstract final class AppText {
   static final strong = _ui.copyWith(fontSize: 15, fontWeight: FontWeight.w700);
   static final small = _ui.copyWith(fontSize: 12, fontWeight: FontWeight.w600);
   static final tiny = _ui.copyWith(fontSize: 9.5, fontWeight: FontWeight.w800);
+
+  // Reading (Notes): roomy lines for longer text.
+  static final lead = _ui.copyWith(fontSize: 17, fontWeight: FontWeight.w600, height: 1.6, color: AppColors.ink);
+  static final reading = _ui.copyWith(fontSize: 15.5, fontWeight: FontWeight.w500, height: 1.6, color: AppColors.ink);
+  static final numeral = _display.copyWith(fontSize: 19, fontWeight: FontWeight.w800, color: AppColors.turqDeep);
 }
 
 ThemeData buildAppTheme() {

@@ -70,12 +70,14 @@ class _AppShellState extends State<AppShell> {
               NotesScreen(services: services, onOpenListen: () => _go(HomeScreen.hearingTab)),
             ],
           ),
-          Positioned(
-            left: AppSpace.navMargin,
-            right: AppSpace.navMargin,
-            bottom: AppSpace.navMargin + MediaQuery.paddingOf(context).bottom,
-            child: CapsuleNav(items: _items, current: _tab, onTap: _go),
-          ),
+          // Hidden while the keyboard is open (Notes search): it would ride up and cover the results.
+          if (MediaQuery.viewInsetsOf(context).bottom == 0)
+            Positioned(
+              left: AppSpace.navMargin,
+              right: AppSpace.navMargin,
+              bottom: AppSpace.navMargin + MediaQuery.paddingOf(context).bottom,
+              child: CapsuleNav(items: _items, current: _tab, onTap: _go),
+            ),
         ],
       ),
     );

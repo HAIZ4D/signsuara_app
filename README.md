@@ -118,20 +118,33 @@ of the chat or its history.
   every 3 sentences while the session runs, so a closed app loses little. Signed in: in the
   account (`users/{uid}/notes`, see "Firebase setup"); guest: kept until the app closes.
 - **Notes tab** (`lib/screens/notes_screen.dart`, replaces the old Learn placeholder): every note,
-  newest first and grouped by day, with its kind, time, length and first words; the numbers at the
-  top are real (notes, time listened). A note (`note_screen.dart`) shows every sentence with its
-  time, and can be copied as text, edited (kind and title, with the same sheet as after Stop) or
-  deleted. Home shows the latest note, and a Notes tile with the count.
+  newest first and grouped by day. The numbers at the top are real (notes, time listened, notes
+  with Gemini notes). **Search** looks in titles, sentences and Gemini's notes as you type and
+  marks the words it found; **chips** show one kind of note. Each card has its kind's colour on the
+  edge, the title, a **speech timeline** ("when words were said", `lib/ui/widgets/speech_rhythm.dart`:
+  the session cut into equal slices of time, each bar as tall as the words heard in it; real data,
+  not a sound level), Gemini's summary or the first words, and its length; ⋮ opens, copies, edits or
+  deletes it without opening it (no swipe gestures). Home shows the latest note, and a Notes tile
+  with the count.
+- **A note** (`lib/screens/note_screen.dart`, `note_summary_view.dart`): a dark header with the
+  kind, date, title, length, language and a big speech timeline; a floating switch at the bottom
+  between **Gemini notes** and **What was said** (every sentence on a timeline with its time); and
+  **Aa** for bigger words (three steps, on top of the phone's own text size). Copy as text, edit
+  (kind and title, with the same sheet as after Stop) or delete. The badge flies over from the list
+  when a note opens; every animation stands still when the phone's "remove animations" setting is
+  on.
 - **Summaries by Gemini** (`lib/listen/note_summary.dart`, `lib/cloud/gemini_summarizer.dart`):
   only when you tap **Summarise with Gemini** in a note. Gemini (model `gemini-3.8-flash`, through
   Firebase AI Logic) gets the note's sentences with their times and is asked to write, in the
   note's language, in short simple sentences, only what was said, keeping every number, date,
   time and dose exactly. Its answer comes back as JSON with a fixed shape and is shown as cards:
-  **Summary**, **Key points**, **Advice & to do**, **Important details** (yellow chips) and
-  **Words explained** (hard, medical, scientific or religious words with a simple meaning); empty
-  parts are left out. The summary is saved in the note (also offline, sent later), shown in the
-  Notes list and on Home, and part of the copied text. "Summarise again" makes a new one; the full
-  transcript always stays below it.
+  **Summary**, **Key points** (numbered), **Advice & to do** (a list to tick off, with how much is
+  done; the ticks are kept in the note), **Important details** (yellow chips; a tap copies one, for
+  a calendar or a message) and **Words explained** (hard, medical, scientific or religious words
+  with a simple meaning); empty parts are left out. While Gemini writes, light sweeps over
+  placeholder lines. The summary is saved in the note (also offline, sent later), shown in the
+  Notes list and on Home, and part of the copied text. "Summarise again" asks first (it replaces
+  the notes and their ticks, and costs a request); the full transcript always stays.
 - **Privacy:** before the first summary the app says what happens and asks: the note's words are
   sent to Google's Gemini. SignSuara uses the **paid** Agent Platform Gemini API (formerly Vertex
   AI), whose terms say requests are not used to train Google's models (the free tier of the Gemini
@@ -267,7 +280,7 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
 | `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
 | `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones |
-| `test/` | 175 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `test/` | 179 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -362,7 +375,8 @@ Saved per user:
 - `users/{uid}/notes/{id}`: a Listen session: `kind` (meeting, lesson, consultation, program,
   other), `title`, `language` (malay or english), `startedAt`, `endedAt` and `lines`, a list of
   `{text, at}` (one per sentence heard); after Summarise also `summary`: `overview`, the lists
-  `keyPoints`, `actions`, `details` and `terms` (`{term, meaning}`), `madeAt` and `model`.
+  `keyPoints`, `actions`, `details` and `terms` (`{term, meaning}`), `madeAt` and `model`, and
+  `done` (the numbers of the actions ticked off) once something is ticked.
 - `users/{uid}/gestures/{id}`: `malay`, `english`, `moving`, `savedAt` and `recordings` (the raw
   recordings as one JSON text, because Firestore can't store lists inside lists).
   The list on the phone is the one the app uses; the account keeps a copy

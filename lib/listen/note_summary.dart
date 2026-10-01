@@ -22,6 +22,7 @@ class NoteSummary {
     required this.terms,
     required this.madeAt,
     required this.model,
+    this.done = const {},
   });
 
   final String overview; // what it was about, in 2 or 3 sentences
@@ -31,6 +32,18 @@ class NoteSummary {
   final List<SummaryTerm> terms; // hard words explained
   final DateTime madeAt;
   final String model;
+  final Set<int> done; // the actions the reader ticked off (their places in [actions])
+
+  /// The same notes, with [done] as the ticked-off actions.
+  NoteSummary withDone(Set<int> done) => NoteSummary(
+      overview: overview,
+      keyPoints: keyPoints,
+      actions: actions,
+      details: details,
+      terms: terms,
+      madeAt: madeAt,
+      model: model,
+      done: done);
 
   Map<String, Object?> toMap() => {
         'overview': overview,
@@ -42,6 +55,7 @@ class NoteSummary {
         ],
         'madeAt': madeAt,
         'model': model,
+        if (done.isNotEmpty) 'done': done.toList()..sort(),
       };
 
   /// The opposite of [toMap]; damaged data gives null (the note is still shown, without it).
@@ -79,6 +93,7 @@ class NoteSummary {
       ],
       madeAt: madeAt,
       model: model,
+      done: {for (final i in (map['done'] as List? ?? const [])) if (i is int) i}, // older notes have none
     );
   }
 

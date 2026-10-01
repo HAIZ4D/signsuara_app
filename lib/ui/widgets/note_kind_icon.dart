@@ -12,7 +12,16 @@ IconData noteKindIcon(NoteKind kind) => switch (kind) {
       NoteKind.other => Icons.notes_rounded,
     };
 
-/// The rounded square behind a note's icon: each kind its own Deaf Flag colour.
+/// Each kind's own Deaf Flag colours: its gradient, the glow under its badge, the icon colour on it.
+(Gradient, List<BoxShadow>, Color) noteKindColours(NoteKind kind) => switch (kind) {
+      NoteKind.meeting => (AppGradients.turq, AppShadows.turqTile, AppColors.onDark),
+      NoteKind.lesson => (AppGradients.blueTile, AppShadows.blueTile, AppColors.onDark),
+      NoteKind.consultation => (AppGradients.sun, AppShadows.sunGlow, AppColors.onYellow),
+      NoteKind.program => (AppGradients.cta, AppShadows.turqTile, AppColors.onDark),
+      NoteKind.other => (AppGradients.night, AppShadows.blueTile, AppColors.onDark),
+    };
+
+/// The rounded square behind a note's icon.
 class NoteKindBadge extends StatelessWidget {
   const NoteKindBadge({super.key, required this.kind, this.size = 46});
 
@@ -21,13 +30,7 @@ class NoteKindBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (gradient, shadow, color) = switch (kind) {
-      NoteKind.meeting => (AppGradients.turq, AppShadows.turqTile, AppColors.onDark),
-      NoteKind.lesson => (AppGradients.blueTile, AppShadows.blueTile, AppColors.onDark),
-      NoteKind.consultation => (AppGradients.sun, AppShadows.sunGlow, AppColors.onYellow),
-      NoteKind.program => (AppGradients.cta, AppShadows.turqTile, AppColors.onDark),
-      NoteKind.other => (AppGradients.night, AppShadows.blueTile, AppColors.onDark),
-    };
+    final (gradient, shadow, color) = noteKindColours(kind);
     return Container(
       width: size,
       height: size,
