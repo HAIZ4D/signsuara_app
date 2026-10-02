@@ -174,8 +174,9 @@ def handshape(side, name, with_thumb=True):
     half bent, thumb along the index), 'thumb_up' (fist, thumb straight out to the side),
     'flat_thumb' (fingers straight together, thumb straight out to the side), 'thumb_along'
     (fist, thumb straight up past the knuckles along the index side), 'pinch' (other fingers in a
-    fist, the index curled at its tip onto the thumb tip, above the knuckles, as in BUAT APA) and
-    'pinch_open' (the same thumb, the index curled down away from it)."""
+    fist, the index raised mainly at its knuckle and the thumb tip on its tip, as in BUAT APA; with
+    the palm up the two meet above the fist) and 'pinch_open' (the same thumb, the index curled into
+    the fist)."""
     straight, bent = (0, 0, 0), (88, 100, 60)
     fingers = {
         'relaxed': dict.fromkeys(FINGERS, (8, 10, 6)),
@@ -191,8 +192,8 @@ def handshape(side, name, with_thumb=True):
         'thumb_up': dict.fromkeys(FINGERS, bent),
         'flat_thumb': dict.fromkeys(FINGERS, straight),
         'thumb_along': dict.fromkeys(FINGERS, bent),
-        'pinch': {'Index': (0, 50, 50), 'Middle': bent, 'Ring': bent, 'Little': bent},
-        'pinch_open': {'Index': (0, 50, 50), 'Middle': bent, 'Ring': bent, 'Little': bent},
+        'pinch': {'Index': (55, 20, 12), 'Middle': bent, 'Ring': bent, 'Little': bent},
+        'pinch_open': {'Index': (55, 20, 12), 'Middle': bent, 'Ring': bent, 'Little': bent},
     }[name]
     spread = {  # sideways (degrees): plus brings a finger towards the middle finger, minus away
         'flat': {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5},
@@ -239,11 +240,13 @@ def handshape(side, name, with_thumb=True):
         return place_thumb(side, base['Index'] + radial * 0.072 - along * 0.005)
     if name == 'thumb_along':  # thumb straight on along the hand, past the knuckles (a slight bend keeps it straight up)
         return place_thumb(side, base['Index'] + radial * 0.008 + along * 0.035, bend_range=(10,))
-    if name in ('pinch', 'pinch_open'):  # thumb tip on the index fingertip; open: then the index curls away
+    if name in ('pinch', 'pinch_open'):  # thumb tip on the index fingertip; open: then the index curls in
+        # the index curl (55, 20, 12) is the natural curl (led by the knuckle) whose tip the thumb
+        # reaches best (1-2 mm, searched); a curl led by the middle joint looked like a bent hook
         tip = Vector(point(f'J_Bip_{side}_Index3', 'tail'))
-        miss = place_thumb(side, tip + palm_n * 0.004 + radial * 0.004, bend_range=range(-10, 60, 10))
+        miss = place_thumb(side, tip + radial * 0.006, bend_range=range(-10, 50, 10))
         if name == 'pinch_open':
-            curl(side, 'Index', 0, 85, 70)
+            curl(side, 'Index', *bent)
         return miss
     return 0.0
 
