@@ -273,7 +273,8 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   other so the pinch shows from the front), the other fingers in a fist, the thumb up on the
   outer side and the index rising (bent mainly at its knuckle) to pinch the thumb tip above the
   fist; the hands swing together to her left and right and the pinch closes and opens with them,
-  twice (closed to the left, the index curled in to the right), then holds; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
+  twice (closed to the left; open to the right: the thumb drawn back and the index a little
+  straighter, tips about 2.5 cm apart, so both fingers move), then holds; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
   from her right side), then the hand opens and goes up: TENGAH HARI = the right forearm upright,
   palm towards the middle, the elbow low; only then the left forearm comes across under that
   elbow.

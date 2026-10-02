@@ -175,8 +175,9 @@ def handshape(side, name, with_thumb=True):
     'flat_thumb' (fingers straight together, thumb straight out to the side), 'thumb_along'
     (fist, thumb straight up past the knuckles along the index side), 'pinch' (other fingers in a
     fist, the index raised mainly at its knuckle and the thumb tip on its tip, as in BUAT APA; with
-    the palm up the two meet above the fist) and 'pinch_open' (the same thumb, the index curled into
-    the fist)."""
+    the palm up the two meet above the fist) and 'pinch_open' (the same pinch opened: the index a
+    little straighter and the thumb drawn back, tips about 2.5 cm apart, so both move when it
+    closes)."""
     straight, bent = (0, 0, 0), (88, 100, 60)
     fingers = {
         'relaxed': dict.fromkeys(FINGERS, (8, 10, 6)),
@@ -245,8 +246,9 @@ def handshape(side, name, with_thumb=True):
         # reaches best (1-2 mm, searched); a curl led by the middle joint looked like a bent hook
         tip = Vector(point(f'J_Bip_{side}_Index3', 'tail'))
         miss = place_thumb(side, tip + radial * 0.006, bend_range=range(-10, 50, 10))
-        if name == 'pinch_open':
-            curl(side, 'Index', *bent)
+        if name == 'pinch_open':  # curling the index into the fist instead looked like it slid along a still thumb
+            curl(side, 'Index', 45, 14, 8)
+            miss = place_thumb(side, tip - along * 0.004 + radial * 0.013, bend_range=range(-10, 50, 10))
         return miss
     return 0.0
 
