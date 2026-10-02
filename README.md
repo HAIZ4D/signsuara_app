@@ -269,9 +269,10 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   at its palm and moving down along it; SUDAH = loose fists at the chest flick down and open, palms
   down, fingers spread; APA KHABAR = flat hands (thumbs up) on the upper chest move down and close
   into thumbs-up fists. BUAT APA and MAKAN TENGAHARI follow videos of signers: BUAT APA = both
-  hands in a fist with the thumb straight up (backs of the hands to the viewer, palms to the
-  body), at mid-chest, swinging together to her left and right twice, the thumbs leaning the way
-  they go; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
+  hands at mid-chest, backs to the viewer, the other fingers in a fist, the index fingertip
+  pinching onto the thumb tip above the knuckles; the hands swing together to her left and right
+  and the pinch opens and closes with them, twice (closed to the left, open to the right), then
+  holds; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
   from her right side), then the hand opens and goes up: TENGAH HARI = the right forearm upright,
   palm towards the middle, the elbow low; only then the left forearm comes across under that
   elbow.
