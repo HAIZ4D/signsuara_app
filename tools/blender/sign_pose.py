@@ -432,6 +432,51 @@ def hands_clash(body='Body'):
         evaluated.to_mesh_clear()
 
 
+TORSO = ('J_Bip_C_Hips', 'J_Bip_C_Spine', 'J_Bip_C_Chest', 'J_Bip_C_UpperChest')
+
+
+def forearm_parts(side):
+    """The vertex groups of arm [side] from the elbow down (forearm, hand, fingers)."""
+    return tuple(f'J_Bip_{side}_{p}' for p in ('LowerArm', 'Hand', 'Thumb', 'Index', 'Middle', 'Ring', 'Little'))
+
+
+def parts_clash(a_parts, b_parts=TORSO, body='Body'):
+    """How many triangles of mesh part A (vertex groups starting with [a_parts], e.g.
+    forearm_parts('L')) pass through part B (default: the torso), with the character as posed now.
+    A vertex belongs to a part when at least half of its weight is on that part's bones. Even the
+    rest pose gives about 55 for each forearm (the sleeves touch the jacket's sides); a forearm
+    inside the body gives hundreds."""
+    from mathutils.bvhtree import BVHTree
+    obj = bpy.data.objects[body]
+    names = {g.index: g.name for g in obj.vertex_groups}
+
+    def owner(v):
+        wa = wb = 0.0
+        for g in v.groups:
+            n = names.get(g.group, '')
+            if n.startswith(a_parts):
+                wa += g.weight
+            elif n.startswith(b_parts):
+                wb += g.weight
+        return 'A' if wa >= 0.5 else 'B' if wb >= 0.5 else None
+
+    own = [owner(v) for v in obj.data.vertices]
+    bpy.context.view_layer.update()
+    evaluated = obj.evaluated_get(bpy.context.evaluated_depsgraph_get())
+    mesh = evaluated.to_mesh()
+    try:
+        verts = [v.co.copy() for v in mesh.vertices]
+        polys = {'A': [], 'B': []}
+        for p in mesh.polygons:
+            o = {own[i] for i in p.vertices}
+            if len(o) == 1 and None not in o:
+                polys[o.pop()].append(tuple(p.vertices))
+        a, b = BVHTree.FromPolygons(verts, polys['A']), BVHTree.FromPolygons(verts, polys['B'])
+        return len(a.overlap(b))
+    finally:
+        evaluated.to_mesh_clear()
+
+
 SLIM_SLEEVES = 'SignSuara slim sleeves'
 
 

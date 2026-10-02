@@ -244,7 +244,10 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   in between (shortest turns, eased); moves between two signing poses are placed frame by frame so
   the elbow does not swing out (`track_frames()`: both arms at once, each with its own keys, and the
   handshape blending from one to the next, e.g. fingers opening while the hand moves). An action `face:<id>` on the face's shape keys gives a sign a
-  facial expression (TERIMA KASIH: a small smile); other signs keep a neutral face. The
+  facial expression (TERIMA KASIH: a small smile; the questions APA, BUAT APA and APA KHABAR: a
+  questioning face as in the reference pictures and video, with the inner eyebrows raised, the eyes
+  a little wider and the lips pushed slightly forward, coming in as the hands rise and relaxing at
+  the end); other signs keep a neutral face. The
   character's jacket sleeves are very wide (a radius of about 5.3 cm round an arm of about 2.4 cm):
   they made the forearms look big, and the cuffs hid the hand whenever the wrist bent (SAYA pointing
   at the chest). So the forearm part of the sleeves is slimmed with a shape key (`slim_sleeves()`:
@@ -277,7 +280,11 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   straighter, tips about 2.5 cm apart, so both fingers move), then holds; MAKAN TENGAHARI = MAKAN (the bunched fingertips touch the lips twice, the hand coming
   from her right side), then the hand opens and goes up: TENGAH HARI = the right forearm upright,
   palm towards the middle, the elbow low; only then the left forearm comes across under that
-  elbow.
+  elbow. The character's arms are short for her chest and jacket, so TENGAH HARI sits a little
+  higher and the left elbow comes forward: that way the left forearm lies across the front of the
+  jacket instead of through it. `parts_clash()` (in `sign_pose.py`: skin and sleeve triangles of
+  a forearm passing through the torso) finds no forearm inside the body on any frame, and the right
+  arm comes back down in front of her.
   SAYA and NAMA were then refined from a description of the signs: SAYA = index-finger fist at the
   middle of the chest, one small light touch; NAMA = two H hands (index and middle finger straight
   and together, ring and little finger curled, thumb folded across them) in front of the lower
