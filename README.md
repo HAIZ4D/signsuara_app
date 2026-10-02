@@ -263,11 +263,13 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
      `character/renders/<id>/0001.png …`;
   2. `python tools/make_sign_clips.py [id …]` turns those frames into `assets/signs/<id>.webp`
      (560 px; the bottom tenth of each frame fades out, because the picture is cut at the skirt).
-     The app picks the new clips up by itself.
-- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `letter_a`, `letter_b`, `terima_kasih`,
-  `saya`, `nama`, `ya`, `tidak`, and then `awak`, `apa`, `sudah`, `buat_apa`, `apa_khabar`,
-  `makan_tengahari` (posed from BIM Sign Bank pictures, right hand; NAMA, APA, SUDAH, BUAT APA,
-  APA KHABAR and MAKAN TENGAHARI with both hands). The newer ones: AWAK = index finger pointing
+     The app picks the new clips up by itself; run `flutter clean` before the next build, or
+     Flutter's build cache can leave newly added clip files out of the app.
+- **Recorded so far:** `rest`, `spell_in`, `spell_out`, `terima_kasih`, `saya`, `nama`, `ya`,
+  `tidak`, and then `awak`, `apa`, `sudah`, `buat_apa`, `apa_khabar`, `makan_tengahari` (posed from
+  BIM Sign Bank pictures, right hand; NAMA, APA, SUDAH, BUAT APA, APA KHABAR and MAKAN TENGAHARI
+  with both hands), and the whole alphabet `letter_a` … `letter_z` (see Fingerspelling below).
+  The newer signs: AWAK = index finger pointing
   at the person in front, a small push; APA = left hand open, fingers up, the right index pointing
   at its palm and moving down along it; SUDAH = loose fists at the chest flick down and open, palms
   down, fingers spread; APA KHABAR = flat hands (thumbs up) on the upper chest move down and close
@@ -294,8 +296,25 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   `hands_clash()` (in `sign_pose.py`) counts skin triangles of one hand that pass through the
   other: 0 on every NAMA frame. Clips are 560 px; the camera frames the upper
   body from just above the head to just below the resting hands.
-- **Partly recorded:** words whose sign has no clip yet are shown grey under the avatar, with a
-  note; the avatar signs the rest.
+- **Fingerspelling:** the letters follow fingerspelling charts of the one-handed alphabet, with
+  the right hand at the place beside the face where letters are signed (the open hand of
+  `spell_in`); every letter clip starts and ends there, and holds its handshape for a quarter of a
+  second (14 frames, about 0.6 s a letter). Most letters only change the handshape: the hand is
+  turned a little where the chart shows it from the side, so the shape reads from the front
+  (C and O open towards the middle, F's ring of index and thumb is turned towards the viewer,
+  G and H point sideways towards her middle). P and Q point down: the forearm comes across from
+  the side and the hand bends down at the wrist (an upright forearm cannot bend the hand that far).
+  J and Z move, and are written the signer's own way, so the viewer sees them mirrored, as in the
+  charts: J = the I hand drops while the palm turns towards her, so the little finger draws a J
+  (a 7 cm stem down, then a 5.5 cm hook towards her middle); Z = the index draws a 7 cm Z (from
+  her view: along the top, diagonally down, along the bottom). A, S, E, M, N and T are all fists
+  that differ in where the thumb is (up beside the fist, across the front, under the curled
+  fingertips, or peeking out between two fingers); the thumb was placed where the camera can see
+  it (checked by tracing lines of sight from the camera to the thumb), but in the toon style these
+  six stay subtle on a small screen.
+- **Words without a sign clip** are fingerspelled when all their letters have clips, which is now
+  every word written with the letters a–z; only words with digits (no number clips yet) are shown
+  grey under the avatar, with a note.
 
 ## Measurements
 

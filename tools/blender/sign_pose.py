@@ -196,7 +196,7 @@ def handshape(side, name, with_thumb=True):
         'pinch': {'Index': (55, 20, 12), 'Middle': bent, 'Ring': bent, 'Little': bent},
         'pinch_open': {'Index': (55, 20, 12), 'Middle': bent, 'Ring': bent, 'Little': bent},
     }[name]
-    spread = {  # sideways (degrees): plus brings a finger towards the middle finger, minus away
+    spread = {  # sideways (degrees): plus turns a finger towards the thumb side, minus towards the little finger
         'flat': {'Index': -3, 'Middle': 0, 'Ring': 2, 'Little': 5},
         '5': {'Index': 9, 'Middle': 0, 'Ring': -6, 'Little': -13},
         'bunched': {'Index': -7, 'Middle': 0, 'Ring': 5, 'Little': 11},

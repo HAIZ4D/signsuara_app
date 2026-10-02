@@ -5,7 +5,9 @@ One clip per sign, named after its id in `lib/signer/bim_signs.dart` (`terima_ka
 `spell_in.webp` / `spell_out.webp` (the hand rising to where letters are signed, and back down).
 Letter and number clips start and end with the hand up at that place; all others start and end
 in the rest pose.
-The app finds the clips here by itself: adding a file is all it takes.
+The app finds the clips here by itself: adding a file is all it takes, but run `flutter clean`
+before the next build. Flutter's build cache only notices changes to files it already knows, so
+an incremental build can leave new clip files out of the app (the tests still see them).
 
 - Animated WebP with a transparent background, 560 px, 24 fps; the bottom tenth fades out
   (the picture is cut at the skirt). `tools/make_sign_clips.py` makes them from the renders.
