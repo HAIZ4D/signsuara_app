@@ -31,6 +31,11 @@ const kSignWords = <String, SignWords>{
   'Saya': SignWords('Saya', 'I / Me', englishSpoken: 'Me'),
   'Nama': SignWords('Nama', 'Name'),
   'TerimaKasih': SignWords('Terima kasih', 'Thank you'),
+  'MakanTengahari': SignWords('Makan tengahari', 'Lunch'),
+  'Islam': SignWords('Islam', 'Islam'),
+  'Solat': SignWords('Solat', 'Prayer'),
+  'Zakat': SignWords('Zakat', 'Zakat'),
+  'Puasa': SignWords('Puasa', 'Fasting'),
 };
 
 /// Words for a label. A label missing from the map is shown and spoken as-is: never a crash.

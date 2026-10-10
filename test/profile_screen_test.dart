@@ -50,7 +50,7 @@ void main() {
     final services = await _pumpProfile(tester);
     expect(find.text('Guest · not signed in'), findsOneWidget);
     expect(find.bySemanticsLabel('0 Conversations'), findsOneWidget);
-    expect(find.bySemanticsLabel('5 Built-in signs'), findsOneWidget, reason: 'A, B, Saya, Nama, Terima kasih');
+    expect(find.bySemanticsLabel('${kSignWords.length} Built-in signs'), findsOneWidget, reason: 'every sign in kSignWords');
     expect(find.text('Not connected'), findsOneWidget, reason: 'glove');
     expect(find.text('Connect'), findsOneWidget);
 

@@ -10,6 +10,7 @@ import 'package:signsuara_app/glove/glove_session.dart';
 import 'package:signsuara_app/main.dart';
 import 'package:signsuara_app/screens/profile_screen.dart';
 import 'package:signsuara_app/screens/splash_screen.dart';
+import 'package:signsuara_app/speech/sign_words.dart';
 import 'package:signsuara_app/theme/app_theme.dart';
 import 'package:signsuara_app/ui/time_label.dart';
 import 'package:signsuara_app/ui/widgets/gradient_button.dart';
@@ -112,7 +113,7 @@ void main() {
         theme: buildAppTheme(), home: Scaffold(body: CustomGesturesPage(gestures: gestures, session: GloveSession()))));
     expect(find.text('My Gestures'), findsOneWidget);
     expect(find.text('Built-in signs'), findsOneWidget);
-    expect(find.text('5'), findsOneWidget, reason: 'A, B, Saya, Nama, Terima kasih');
+    expect(find.text('${kSignWords.length}'), findsOneWidget, reason: 'every sign in kSignWords');
     expect(find.text('0 saved'), findsOneWidget);
     expect(find.textContaining('No custom gestures yet'), findsOneWidget);
     expect(find.textContaining('Terima kasih'), findsOneWidget, reason: 'built-in signs listed');
