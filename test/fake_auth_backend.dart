@@ -3,6 +3,8 @@ import 'package:signsuara_app/cloud/account.dart';
 import 'package:signsuara_app/custom/custom_gesture.dart';
 import 'package:signsuara_app/custom/gesture_store.dart';
 import 'package:signsuara_app/history/history_store.dart';
+import 'package:signsuara_app/learn/note_quiz.dart';
+import 'package:signsuara_app/learn/quiz_question.dart';
 import 'package:signsuara_app/listen/listen_note.dart';
 import 'package:signsuara_app/listen/note_store.dart';
 import 'package:signsuara_app/listen/note_summary.dart';
@@ -49,6 +51,11 @@ class FakeAuthBackend implements AuthBackend {
 
   @override
   Summarizer summarizer() => fakeSummarizer;
+
+  final fakeQuizMaker = FakeQuizMaker();
+
+  @override
+  QuizMaker quizMaker() => fakeQuizMaker;
 
   /// Makes the next rename fail.
   SignInFailure? renameFailure;
@@ -135,6 +142,35 @@ class FakeSummarizer implements Summarizer {
     return result;
   }
 }
+
+/// Gemini's quizzes in tests: returns [result] (or throws [failure]) and remembers what it was asked.
+class FakeQuizMaker implements QuizMaker {
+  List<QuizQuestion> result = exampleQuiz();
+  QuizFailure? failure;
+  final asked = <ListenNote>[];
+
+  @override
+  Future<List<QuizQuestion>> makeQuiz(ListenNote note) async {
+    asked.add(note);
+    if (failure case final failure?) throw failure;
+    return result;
+  }
+}
+
+List<QuizQuestion> exampleQuiz() => [
+      QuizQuestion(
+        question: 'How often is the medicine taken?',
+        options: const [QuizOption('Once a week'), QuizOption('Twice a day'), QuizOption('Only at night'), QuizOption('Never')],
+        answer: 1,
+        explain: 'The doctor said twice a day, after meals.',
+      ),
+      QuizQuestion(
+        question: 'When is the next visit?',
+        options: const [QuizOption('8 October'), QuizOption('1 January'), QuizOption('Tomorrow'), QuizOption('Next year')],
+        answer: 0,
+        explain: 'The next visit is on 8 October.',
+      ),
+    ];
 
 final exampleSummary = NoteSummary(
   overview: 'The doctor explained how to take the new medicine.',

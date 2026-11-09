@@ -7,9 +7,10 @@ import 'package:flutter/foundation.dart';
 import '../listen/listen_note.dart';
 import '../listen/note_summary.dart';
 
-/// The only file that uses firebase_ai: Gemini on the paid Agent Platform (Vertex AI) service,
-/// through Firebase AI Logic (README "Listen and Notes"). No API key in the app: it goes through the
-/// app's own Firebase project. Google does not use what paid-tier requests send to train its models.
+/// One of the two files that use firebase_ai (with gemini_quiz_maker.dart): Gemini on the paid
+/// Agent Platform (Vertex AI) service, through Firebase AI Logic (README "Listen and Notes"). No API
+/// key in the app: it goes through the app's own Firebase project. Google does not use what
+/// paid-tier requests send to train its models.
 class GeminiSummarizer implements Summarizer {
   /// One place for the model name (README "Listen and Notes").
   static const model = 'gemini-3.8-flash';

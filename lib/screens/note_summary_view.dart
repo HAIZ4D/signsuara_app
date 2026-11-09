@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../learn/note_quiz.dart';
 import '../listen/listen_note.dart';
 import '../listen/note_summary.dart';
 import '../theme/app_theme.dart';
@@ -21,6 +22,11 @@ class NoteNotesView extends StatelessWidget {
     required this.onToggle,
     required this.onCopy,
     required this.onSeeSaid,
+    required this.quizSaved,
+    required this.onQuiz,
+    required this.onNewQuiz,
+    this.signsHeard = const [],
+    this.onLearnSigns,
   });
 
   final ListenNote note;
@@ -31,18 +37,29 @@ class NoteNotesView extends StatelessWidget {
   final ValueChanged<int> onToggle; // ticks or unticks an action
   final ValueChanged<String> onCopy; // an important detail
   final VoidCallback onSeeSaid;
+  final bool quizSaved; // a Gemini quiz of this note is kept on the phone (Learn)
+  final VoidCallback onQuiz; // play it, or make one
+  final VoidCallback onNewQuiz;
+  final List<String> signsHeard; // glosses of the signs heard in the note that the avatar can show
+  final VoidCallback? onLearnSigns;
 
   @override
   Widget build(BuildContext context) {
     final summary = note.summary;
+    final quiz = [
+      ('quiz', _QuizMe(note: note, saved: quizSaved, onQuiz: onQuiz, onNewQuiz: onNewQuiz)),
+      if (signsHeard.isNotEmpty && onLearnSigns != null) ('signs', _SignsHeard(glosses: signsHeard, onLearn: onLearnSigns!)),
+    ];
     final cards = <(String, Widget)>[
       if (problem case final problem?) ('problem', Notice(message: problem)),
       if (busy)
         ('writing', const _Writing())
-      else if (summary == null)
-        ('ask', _AskGemini(onTap: onSummarize))
-      else ...[
+      else if (summary == null) ...[
+        ('ask', _AskGemini(onTap: onSummarize)),
+        ...quiz,
+      ] else ...[
         ('overview', _Overview(summary: summary, onAgain: onAgain)),
+        ...quiz,
         if (summary.keyPoints.isNotEmpty) ('points', _KeyPoints(points: summary.keyPoints)),
         if (summary.actions.isNotEmpty) ('todo', _ToDo(actions: summary.actions, done: summary.done, onToggle: onToggle)),
         if (summary.details.isNotEmpty) ('details', _Details(details: summary.details, onCopy: onCopy)),
@@ -565,6 +582,130 @@ class _Words extends StatelessWidget {
                   ],
                 ),
               ),
+          ],
+        ),
+      );
+}
+
+/// Learn mode's Gemini Quiz for this note (README "Learn"): make one, or play the one kept.
+class _QuizMe extends StatelessWidget {
+  const _QuizMe({required this.note, required this.saved, required this.onQuiz, required this.onNewQuiz});
+
+  final ListenNote note;
+  final bool saved;
+  final VoidCallback onQuiz;
+  final VoidCallback onNewQuiz;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: AppColors.blueWash, borderRadius: BorderRadius.circular(15)),
+                child: const Icon(Icons.quiz_rounded, color: AppColors.royal),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Quiz yourself', style: AppText.section),
+                    const SizedBox(height: 2),
+                    Text(
+                      saved
+                          ? 'Your quiz of this note is saved. Play it again any time.'
+                          : '${quizLength(note)} questions from this note, made by Gemini. Wins XP in Learn.',
+                      style: AppText.small.copyWith(color: AppColors.inkSoft),
+                    ),
+                  ],
+                ),
+              ),
+            ]),
+            const SizedBox(height: AppSpace.l),
+            GradientButton(
+              label: saved ? 'Play quiz' : 'Make quiz',
+              icon: saved ? Icons.play_arrow_rounded : Icons.quiz_rounded,
+              gradient: AppGradients.blueTile,
+              shadow: AppShadows.blueTile,
+              onTap: onQuiz,
+            ),
+            if (saved)
+              TextButton.icon(
+                onPressed: onNewQuiz,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('New quiz from Gemini'),
+                style: TextButton.styleFrom(foregroundColor: AppColors.turqInk, minimumSize: const Size.fromHeight(44)),
+              ),
+          ],
+        ),
+      );
+}
+
+/// Learn mode's lesson of the signs heard in this note (README "Learn"): which ones, and the way in.
+class _SignsHeard extends StatelessWidget {
+  const _SignsHeard({required this.glosses, required this.onLearn});
+
+  final List<String> glosses;
+  final VoidCallback onLearn;
+
+  static const _shown = 6;
+
+  @override
+  Widget build(BuildContext context) => _Card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: AppColors.yellowWash, borderRadius: BorderRadius.circular(15)),
+                child: const Icon(Icons.sign_language_rounded, color: AppColors.onYellowInk),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Learn the signs you heard', style: AppText.section),
+                    const SizedBox(height: 2),
+                    Text(glosses.length == 1 ? '1 sign in this note' : '${glosses.length} signs in this note',
+                        style: AppText.small.copyWith(color: AppColors.inkSoft)),
+                  ],
+                ),
+              ),
+            ]),
+            const SizedBox(height: AppSpace.m),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final gloss in glosses.take(_shown))
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(color: AppColors.surface2, borderRadius: BorderRadius.circular(AppRadius.pill)),
+                    child: Text(gloss, style: AppText.label.copyWith(color: AppColors.ink)),
+                  ),
+                if (glosses.length > _shown)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+                    child: Text('+${glosses.length - _shown} more', style: AppText.label.copyWith(color: AppColors.inkSoft)),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpace.l),
+            GradientButton(
+              label: 'Learn them',
+              icon: Icons.school_rounded,
+              gradient: AppGradients.sunCta,
+              shadow: AppShadows.sunCta,
+              foreground: AppColors.onYellow,
+              onTap: onLearn,
+            ),
           ],
         ),
       );

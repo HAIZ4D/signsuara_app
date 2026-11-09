@@ -85,6 +85,25 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('Home: the Learn BIM card opens Learn mode, Back returns to Home', (tester) async {
+    await openApp(tester);
+    await tester.scrollUntilVisible(find.text('Learn BIM'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -200)); // out from under the capsule nav
+    await tester.pump();
+    expect(find.text('Games to learn signs · Level 1 · 0 XP'), findsOneWidget);
+    await tester.tap(find.text('Learn BIM'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('LEARN MODE'), findsOneWidget);
+    expect(find.text('Jom belajar!'), findsOneWidget, reason: "Cikgu Suara's greeting (a guest)");
+
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700));
+    expect(find.text('LEARN MODE'), findsNothing);
+    expect(find.text('Games to learn signs · Level 1 · 0 XP'), findsOneWidget);
+  });
+
   testWidgets('signing out in Profile makes Home say Guest', (tester) async {
     final semantics = tester.ensureSemantics();
     await openApp(tester, Account(FakeAuthBackend(currentUser: testUser)));

@@ -46,6 +46,11 @@ abstract final class AppColors {
   static const danger = Color(0xFFE8485F);
   static const warning = Color(0xFFEF6C00);
   static const offline = Color(0xFF6F86B6);
+  // Learn quiz answers (state colours, like live and danger); always shown with an icon too.
+  static const right = Color(0xFF0F7A45); // white text on it 5.4:1, on rightWash 4.8:1
+  static const rightWash = Color(0xFFE3F6EC);
+  static const wrongInk = Color(0xFFB3263A); // on wrongWash 5.5:1
+  static const wrongWash = Color(0xFFFDE8EB);
   static const recDot = Color(0xFFFF5A72); // "LIVE" dot
   static const recText = Color(0xFFFF8A9A);
   static const chipOnStage = Color(0x8C04183A); // dark chip over a dark stage
@@ -129,6 +134,13 @@ abstract final class AppGradients {
     center: Alignment(0, -0.28),
     radius: 0.75,
     colors: [Color(0x6113C6D6), Color(0x0013C6D6)],
+  );
+  /// Soft turquoise light behind the small avatar on a dark header (Learn); it fades out inside
+  /// its box (a bigger radius left a visible rectangle).
+  static const avatarGlow = RadialGradient(
+    center: Alignment(0, -0.25),
+    radius: 0.5,
+    colors: [Color(0x5513C6D6), Color(0x0013C6D6)],
   );
   /// The Listen screen's light "studio" stage: white at the top, a cool blue-grey at the bottom.
   static const studio = LinearGradient(
@@ -237,6 +249,7 @@ abstract final class AppShadows {
   static const bubbleMe = [BoxShadow(color: Color(0xE600A4B4), blurRadius: 24, spreadRadius: -14, offset: Offset(0, 12))];
   static const sunCta = [BoxShadow(color: Color(0xE6F2A900), blurRadius: 26, spreadRadius: -12, offset: Offset(0, 16))];
   static const dock = [BoxShadow(color: Color(0xCC002B66), blurRadius: 26, spreadRadius: -11, offset: Offset(0, 14))];
+  static const rightGlow = [BoxShadow(color: Color(0x800F7A45), blurRadius: 18, spreadRadius: -6, offset: Offset(0, 6))];
 }
 
 abstract final class AppMotion {

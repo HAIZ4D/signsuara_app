@@ -10,12 +10,14 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
+import '../learn/note_quiz.dart';
 import '../listen/note_store.dart';
 import '../listen/note_summary.dart';
 import 'account.dart';
 import 'firestore_gesture_store.dart';
 import 'firestore_history_store.dart';
 import 'firestore_note_store.dart';
+import 'gemini_quiz_maker.dart';
 import 'gemini_summarizer.dart';
 
 /// Google sign-in through Firebase: the ONLY file using firebase_core, firebase_auth,
@@ -215,6 +217,9 @@ class FirebaseAuthBackend implements AuthBackend {
 
   @override
   Summarizer summarizer() => GeminiSummarizer();
+
+  @override
+  QuizMaker quizMaker() => GeminiQuizMaker();
 
   /// Saves users/{uid}: name, email, photo, first and last sign-in. A failed write is only logged
   /// (e.g. Firestore rules not set yet): the app works the same without it.

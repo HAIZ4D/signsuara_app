@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../custom/gesture_store.dart';
 import '../history/history_store.dart';
+import '../learn/note_quiz.dart';
 import '../listen/note_store.dart';
 import '../listen/note_summary.dart';
 
@@ -60,6 +61,9 @@ abstract class AuthBackend {
 
   /// What makes a note's summary (Gemini); also for guests, as it needs no sign-in.
   Summarizer summarizer();
+
+  /// What makes a quiz from a note (Gemini, Learn mode); also for guests.
+  QuizMaker quizMaker();
 }
 
 /// Who is using the app: a Google account, or a guest (no account, no cloud features).
@@ -90,6 +94,10 @@ class Account extends ChangeNotifier {
   /// Makes summaries of notes (Gemini); null when Firebase could not start.
   Summarizer? get summarizer => _summarizer ??= _backend?.summarizer();
   Summarizer? _summarizer;
+
+  /// Makes quizzes from notes (Gemini); null when Firebase could not start.
+  QuizMaker? get quizMaker => _quizMaker ??= _backend?.quizMaker();
+  QuizMaker? _quizMaker;
 
   _Stores? _stores() {
     final user = _user;

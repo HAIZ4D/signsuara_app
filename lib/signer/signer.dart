@@ -30,6 +30,9 @@ class Signer extends ChangeNotifier {
   /// True once the app contains any sign clip: then the avatar is shown.
   bool get hasClips => !_library.isEmpty;
 
+  /// Which signs have a clip (empty until the app's clip list is read). Learn mode asks from it.
+  SignClipLibrary get library => _library;
+
   /// True while the avatar is signing a sentence (not while standing at rest).
   bool get signing => player.playing && _stepOfClip.isNotEmpty;
 

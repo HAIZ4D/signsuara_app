@@ -9,6 +9,9 @@ import '../glove/glove_ble.dart';
 import '../glove/glove_session.dart';
 import '../history/conversation_history.dart';
 import '../history/conversation_log.dart';
+import '../learn/learn_progress.dart';
+import '../learn/note_quiz.dart';
+import '../learn/quiz_question.dart';
 import '../listen/listen_session.dart';
 import '../listen/notes.dart';
 import '../signer/signer.dart';
@@ -37,7 +40,7 @@ class AppServices {
       stopListening: this.transcriber.stop,
       store: () => notes.store,
     );
-    session.customMatch = (features) => gestures.matcher.match(features);
+    session.customMatch = _matchCustom;
     speaker.lookup = words;
     session.addListener(_keepScreenOn);
     listenSession.addListener(_keepScreenOn);
@@ -62,6 +65,7 @@ class AppServices {
   late final ListenSession listenSession; // Listen tab: meetings, classes... kept as notes
   late final notes = Notes(account: account); // the Notes tab: the account's, or the guest's
   final Signer signer; // signs what the hearing person said (README "Signer")
+  final learn = LearnProgress(); // Learn mode's XP, streak and badges (on the phone only)
   late final session = GloveSession(onGesture: _onGesture);
   late final ble = GloveBle(session);
   AppStorage? _storage;
@@ -70,14 +74,26 @@ class AppServices {
 
   /// Everything a screen may need to redraw for.
   Listenable get changes =>
-      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup, signer, listenSession, notes]);
+      Listenable.merge([session, speaker, transcriber, gestures, log, account, history, backup, signer, listenSession, notes, learn]);
 
   /// Chat's own listening (a Listen session uses the same microphone).
   bool get chatListening => transcriber.listening && !_micForListen;
   String? get chatProblem => _micForListen ? null : transcriber.problem;
 
+  /// While set (a Learn game is open), recognised signs go only to the game: not spoken, not added
+  /// to the conversation. The game clears it when it closes.
+  void Function(String label)? gestureOverride;
+
+  /// Custom gestures are matched before the model; a Learn game turns that off while it asks for a
+  /// built-in sign (a custom gesture must not take its place), and on again when it closes.
+  bool get customGesturesOn => session.customMatch != null;
+  set customGesturesOn(bool on) => session.customMatch = on ? _matchCustom : null;
+
+  String? _matchCustom(List<double> features) => gestures.matcher.match(features);
+
   /// A recognised sign: spoken (as before) and added to the conversation.
   void _onGesture(String label) {
+    if (gestureOverride case final game?) return game(label);
     speaker.say(label);
     log.addSigned(label);
   }
@@ -114,8 +130,9 @@ class AppServices {
       final storage = _storage = await AppStorage.open();
       speaker.language = storage.loadLanguage() ?? SpeechLanguage.malay;
       gestures.load(storage);
+      learn.load(storage);
     } catch (_) {
-      // Without storage the app still works; custom gestures just can't be saved.
+      // Without storage the app still works; custom gestures and Learn progress just can't be saved.
     }
     backup.start();
     await speaker.init();
@@ -128,6 +145,12 @@ class AppServices {
   bool get summaryNoticeSeen => _storage?.summaryNoticeSeen() ?? false;
 
   Future<void> markSummaryNoticeSeen() async => _storage?.saveSummaryNoticeSeen();
+
+  /// The Gemini quiz kept on this phone for a note (Learn), or null: playing it again costs nothing.
+  List<QuizQuestion>? savedQuiz(String noteId) => quizFromMap(_storage?.loadQuiz(noteId));
+
+  Future<void> saveQuiz(String noteId, List<QuizQuestion> questions) async =>
+      _storage?.saveQuiz(noteId, quizToMap(questions));
 
   void setLanguage(SpeechLanguage language) {
     speaker.setLanguage(language);
@@ -194,6 +217,7 @@ class AppServices {
     log.removeListener(_signLatestHeard);
     listenSession.dispose();
     notes.dispose();
+    learn.dispose();
     signer.dispose();
     log.dispose();
   }

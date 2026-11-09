@@ -27,6 +27,12 @@ Universiti Putra Malaysia (UPM).
   glove: calm while it is off, livelier while it is connected, and a burst each time a sign is
   spoken; the glove card then shows the last sign. In the evening a few stars twinkle in the
   header. Every animation stands still when the phone's "remove animations" setting is on.
+- **Learn mode** (see "Learn"): games to learn BIM with the signer avatar, with XP, levels, a
+  daily streak, badges and a **learning path** of units (watch, quiz, practise; 3 stars each):
+  **Teka Isyarat** (guess the sign), **Sign Quest** (copy the sign with
+  the glove, with a live finger meter), **Eja Nama** (any name fingerspelled; **Baca Jari**: read
+  her fingers and type the word), **Learn the signs you heard** (a lesson made from the signs said
+  in a Listen note) and **Gemini Quiz** (a quiz made from your Listen notes).
 - Motion-sensor drop-out detection, and the screen stays on while the glove is connected.
 
 Built-in signs: **A, B, Saya** (I / me), **Nama** (name), **Terima kasih** (thank you).
@@ -316,6 +322,167 @@ The hearing person's words will be shown by a BIM signer avatar, next to the tex
   every word written with the letters a–z; only words with digits (no number clips yet) are shown
   grey under the avatar, with a note.
 
+## Learn
+
+SignSuara has two sides: **Talk** (Chat, Listen, Gestures, Notes: help to communicate) and
+**Learn** (games to learn BIM). Learn opens from the **Learn BIM** card on Home (the capsule nav
+has no room for a sixth tab). Code: `lib/learn/`.
+
+- **The hub** (`learn_screen.dart`), built like a game's home screen:
+  - **Cikgu Suara** (the avatar) waves hello (`wave` clip, else the rest pose) beside a **speech
+    bubble**: "Jom belajar, Haizad!" and ONE suggestion with its button, in this order: today's
+    sign of the day (mentioning the streak when it would end today), the next unit of the path,
+    the XP still missing for today's goal, or "Today's goal is done".
+  - **Counters**: Level (a ring = XP in this level), Today (a ring = today's XP of the 50 XP daily
+    goal) and the streak (a flame). The rings fill up when the screen opens.
+  - **Sign of the day**: one word sign a day (the same all day, going round all word signs;
+    `signOfTheDay`), with the date; watching it gives +5 XP once a day and counts for the streak.
+  - **Your path**: the next units on a short dotted line (the next one marked NEXT); "See all"
+    opens the whole path.
+  - **Play**: the games as a grid of solid-coloured tiles of two sizes (dark turquoise, yellow,
+    dark blue, royal blue, white; no glows), each with its icon (also big and faint in a corner),
+    name, what you do and a real detail ("37 signs", "1 note with signs"); a tile sinks a little
+    while pressed. Sign Quest says "Glove is off" and explains instead of opening without the
+    glove. The tiles grow with the phone's text size.
+  - **Badges** with how close each one is: "4/26 letters", "1/7 days" (and a ring), or the game
+    that gives it.
+  All of it is real progress, kept on the phone (today's XP and the sign of the day are saved with
+  it).
+  - **Motion** ("playful": 150–400 ms, a small overshoot, each with a job): **tap Cikgu Suara and
+    she waves again** (cheers every other time, with a light buzz); her bubble pops out from her
+    side after she starts waving, and again when her tip changes, its arrow nudging twice; a kept
+    streak's flame lights up with a pop; a ring pings from the sign of the day's ▶ until it is
+    watched, then "Watched" pops in; the path's dotted trail draws itself in and the NEXT tag bobs
+    like a map marker; the game tiles pop in one after another (50 ms apart) and spring back when
+    let go; the badges' progress rings fill and unlocked badges pop in. Only the ping and the NEXT
+    tag loop, each redrawn on its own; everything stands still with "remove animations" (tapping
+    her still works: her signing is content). Measured on the Galaxy A13 (release build): 59.9 fps,
+    0 % late frames, at the top of the hub and at the path and games.
+- **Learning path** (`learn_units.dart`, `learn_path_screen.dart`): the signs in **units**, in
+  order, words and letters taking turns: Kenali Diri (introduce yourself), Huruf A–I, Jawab &
+  Tanya (answer and ask), Huruf J–R, Berbual (chatting), Huruf S–Z, Agama (religion). A unit lists
+  more signs than have clips today (e.g. ASSALAMUALAIKUM, BAIK, MAKAN, TOLONG); those with a clip
+  are taught, the others join by themselves when their clip is added, and a unit appears once 2 of
+  its signs have clips (Agama waits for ISLAM, SOLAT, PUASA, ZAKAT). Each unit: **watch** the
+  signs (a lesson, ★), its **quiz** (a Teka Isyarat round of just these signs; 70 % passes, ★★,
+  and opens the next unit; all right, ★★★), and, for the glove's own signs, **practise with the
+  glove** (Sign Quest, optional, so the path works without the glove). The hub's **Continue**
+  card opens the unit to do next; "See all" shows the path: the units zig-zag down the page on a
+  dotted line (turquoise once passed), locked ones grey with a lock (a tap says which unit opens
+  it), the next one yellow. After a unit quiz, Results say what happened ("Unit passed! "Huruf
+  A–I" is open now."). Stars are kept with the rest of the progress, on the phone.
+- **Teka Isyarat** ("guess the sign", no glove needed; `teka_isyarat.dart`): the avatar signs, you
+  pick its meaning from 4 answers. A round is 10 signs, about 5 letters and 5 words, none twice; the
+  3 wrong answers come from the same group (letters with letters). Every clip in `assets/signs/`
+  can be asked except `rest`, `spell_in`, `spell_out` and the avatar's reactions (`wave`, `cheer`,
+  `try_again`), so **a new clip joins the game by itself**. Words show their gloss with the first
+  English meaning (`kBimSigns`), letters "Huruf A". 10 seconds a question; with fewer than 4 clips
+  the game explains why it can't start.
+  Letters are shown as in Listen: the hand rises to the spelling place (`spell_in`), makes the
+  letter, and comes down (`spell_out`).
+- **Sign Quest** (copy the sign with the glove; `sign_quest_screen.dart`): the avatar shows a sign,
+  you tap **I'm ready**, a 3-2-1 countdown, then you sign it. **The glove's own recogniser
+  decides** (the same model and live rules as Chat; no new recogniser). 5 signs a round, 3 tries
+  each. The signs are the model's labels (not Rest) that have a clip: the label's clip is found by
+  one rule (`A` → `letter_a`, `TerimaKasih` → `terima_kasih`; `sign_targets.dart`), so a newly
+  trained sign joins once its clip is added.
+  - **While the game is open, signs go only to the game** (`AppServices.gestureOverride`): Chat
+    neither speaks them nor adds them to the conversation. **Custom gestures are off** during the
+    game (`AppServices.customGesturesOn`), so one can't take the place of the sign asked. Both are
+    back as soon as the game closes.
+  - Recognition is paused outside the signing moment and **starts with an empty window at "Go"**,
+    so nothing signed before counts. From an empty start the recogniser needs 1.8 s (a full 38-row
+    window plus the same answer twice), so **stars are counted from that moment**: under 2 s = 3★,
+    under 4 s = 2★, later = 1★, and the try lasts 6 s after it (a 7.8 s bar).
+  - **Another sign seen on the way costs nothing**: the screen shows "The glove sees Nama. Keep
+    going!" (a hand passes through other shapes while forming a sign). A try is used up only when
+    time runs out; then the avatar shows the sign again. A try the glove can't follow (connection
+    lost, motion sensor out: all six motion values 0) is cancelled and not counted.
+  - **Finger meter** (`finger_meter.dart`): the five fingers live from the glove, a yellow line
+    where each should be, green when a finger is within `kFingerTolerance` (80 ADC counts) of the
+    sign's average. A finger moves only ~350–420 counts from straight to bent on this glove, so a
+    larger tolerance (300 was the first idea) made almost every finger "in place". The ring around
+    the meter fills while 4 or 5 fingers are in place and closes when the glove accepts the sign; it
+    only guides. The averages (`kSignFingerTargets`) come from **all training rows** of each sign
+    (`tools/export_finger_targets.py`: 26,250 rows, 30–40 recordings a sign; rows with a 4095
+    reading would be left out, there were none). Most fingers vary less than 80 across recordings;
+    a few vary more (MakanTengahari's index 96, Nama's thumb 88), so those can flicker between in
+    place and not.
+  - Right: strong vibration, the stars and the word pop up, the phone says the word, +5 XP a star.
+    Time up: light vibration, the meter shakes. The hub's card is greyed out with "Connect the
+    glove on Home first" until the glove is connected.
+- **Eja Nama** (fingerspelling, no glove needed; `eja_nama.dart`, `eja_nama_screen.dart`): type
+  any name and the avatar fingerspells it: the hand rises to the spelling place (`spell_in`),
+  makes each letter and comes down (`spell_out`), so a name of two words gets a short break. Tiles
+  under the stage show the letters, the one being made in yellow. Only the letters A–Z are spelled
+  (digits, ' and - are left out, and the screen says so); at most 24 letters. Signed in, the first
+  name is already typed. **Baca Jari** ("read the fingers", `read_fingers_screen.dart`): she
+  fingerspells one of 35 short everyday Malay words (IBU, KUCING, NASI, …; `kSpellWords`), one box
+  per letter shows its length, and you type what you saw (capitals and spaces don't matter). After
+  each answer the word and its English are shown; a wrong answer is spelled once more. 5 words a
+  round, +10 XP each, and the letters of words read right count for *Alphabet master*.
+- **Learn the signs you heard** (`note_signs.dart`, `note_lesson_screen.dart`): it turns what was
+  said in a class or a meeting into a BIM lesson. A note's sentences go through the signer's
+  translator (phrases first, Malay or English: "thank you" and "terima kasih" are both TERIMA
+  KASIH, "I" is SAYA), and every sign with a clip is kept once, in the order first said, with how
+  often it was heard. Names and other words that would be fingerspelled are left out (that is Eja
+  Nama). The note shows a **Learn the signs you heard** card (only when it has such signs) listing
+  them; the hub has **Signs in your notes** (a list of notes with how many signs each has). The
+  lesson shows the signs one by one: the avatar signs it, its gloss and English, "Heard 2×", and
+  the sentence it was heard in with its words marked. Then **Quiz me on these** (a Teka Isyarat
+  round asking only these signs; the wrong answers come from every clip) and, for the glove's own
+  signs among them, **Practise with the glove** (Sign Quest). Limit: only the words that have a
+  sign clip (11 today) can be taught.
+- **Gemini Quiz** (a quiz from a Listen note; `note_quiz.dart`, `gemini_quiz_screen.dart`,
+  `lib/cloud/gemini_quiz_maker.dart`): from the hub (pick a note) or from a note's **Quiz yourself**
+  card (Make quiz; once one is kept: Play quiz, or New quiz from Gemini). Gemini is asked like for
+  summaries (same model, paid service, App Check, the same notice the first time, and the same
+  plain error messages, e.g. without internet): for a Deaf learner, in the note's language, only
+  from what was said (plus the note's summary, if it has one, to find what matters), short simple
+  sentences, 4 answers with one right, no trick questions, one line explaining the answer. **5
+  questions, or 3 for a note under 80 words.** The phone checks every question (a question, exactly
+  4 different non-empty answers, an answer 0–3) and drops bad ones; none left = "Try again". The
+  answers are shuffled on the phone (models like to put the right one first). While Gemini works:
+  "Cikgu Suara is reading your notes…". The quiz is **kept on the phone** per note (`AppStorage`),
+  so playing it again sends nothing to Gemini. No timer; after each answer its explanation is
+  shown. +10 XP per right answer; the first one finished wins *Study buddy*.
+- **The quiz screen** (`quiz_screen.dart`, shared by Teka Isyarat and Gemini Quiz): the stage with
+  "sign it again" and "slower", a timer bar with the seconds, one dot per question, and the combo.
+  Every answer is shown in **three ways** for Deaf users: colour (green right, red wrong; these are
+  state colours like the live dot), an icon (✓ / ✗), and words ("Not quite. It's SAYA."), plus a
+  vibration (light = right, strong = wrong). A wrong answer or time up shows the right one and
+  signs it again; **Next** waits for a tap so it can be watched. "+10 XP" floats up from the stage.
+- **Results** (`results_screen.dart`): the score, the XP counting up, level, streak, new badges,
+  Play again (a new round) and Back to Learn.
+- **Progress** (`learn_progress.dart`), kept **on the phone only** (`AppStorage`, no account
+  needed): +10 XP per right answer, one level per 100 XP; the streak grows by one on each new day
+  with a finished round, shows 0 once a whole day was missed and starts again at 1. Progress is
+  saved when a round is finished; a round left halfway counts nothing. Badges: *First sign* (a sign
+  copied in Sign Quest), *Alphabet master* (every letter A–Z right at least once in Teka Isyarat),
+  *Study buddy* (a Gemini quiz finished) and *7-day streak*.
+- **Motion** (`flutter_animate`): short bounces, shakes and the XP float, 400 ms or less, none of
+  them blocking the game; all left out when the phone's "remove animations" setting is on. The
+  10-second timer keeps its real speed with that setting (Flutter would otherwise run it 20 times
+  faster). A perfect score or a new level gets a second of **confetti** (`confetti`, Deaf Flag
+  colours) on Results, also left out with that setting.
+- **Felt as well as seen** (vibration, for Deaf users who keep their eyes on the hand or the
+  avatar): light = right, strong = wrong or a sign copied; in Sign Quest a tick for each of 3, 2,
+  1 and a stronger buzz at "Go"; one buzz on Results for a perfect score, a new level or a badge.
+- **The avatar's reactions** (`assets/signs/wave.webp`, `cheer.webp`, `try_again.webp`; the games
+  also work without them). None of them is a BIM sign:
+  - `wave` (the hub says hello): the right hand rises beside the face, palm forward, and waves
+    side to side, with a smile.
+  - `cheer` (a sign copied in Sign Quest): **Deaf applause**, both hands up beside the head,
+    fingers spread, wrists twisting back and forth (50° each way), with a big smile.
+  - `try_again` (time up in Sign Quest, before the sign is shown again): "Semangat!", both closed
+    fists in front of the chest pumped twice, a head tilt and a nod, a kind smile. A palms-up
+    shrug was tried first and dropped: open palms turned up read as a question ("what?"). The
+    fists are closed with the thumb across the fingers: the A fist (thumb up) read as a thumbs-up.
+  Like the signs they start and end in the rest pose; the hands first move apart sideways (they
+  touch at rest) and no forearm passes through the body (checked on every frame). They are made
+  with the same tools (`tools/blender/render_signs.py`, then `python tools/make_sign_clips.py
+  <id>`, then `flutter clean`) and are never asked in Teka Isyarat.
+
 ## Measurements
 
 - **Python ↔ Dart parity**: for one real window per sign, the Dart features match Python within
@@ -396,17 +563,18 @@ charging. Home stays the busiest screen: everything on it is redrawn while its a
 | `lib/speech/` | speech map, text-to-speech, speech-to-text |
 | `lib/custom/` | custom gestures: model, matcher, generated reference bank, screens, account backup (`gesture_backup.dart`) |
 | `lib/app/` | app shell (5 tabs + floating capsule nav) and the shared services (one glove connection) |
+| `lib/learn/` | Learn mode: the hub, the learning path (units, lessons), Teka Isyarat, Sign Quest (with the finger meter and the sign targets), Eja Nama and Baca Jari, the lesson of the signs heard in a note, Gemini Quiz, the shared note list, quiz and results screens, progress (XP, streak, badges) |
 | `lib/listen/` | Listen sessions and their notes (the note, its store, the list for Notes and Home, the summary and what Gemini is asked) |
 | `lib/screens/` | screens: splash, welcome pages, sign-in, Home, Chat (conversation), Listen (hearing), Notes (list + one note), history, Profile & settings |
-| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup), `firestore_note_store.dart` (Listen notes), `gemini_summarizer.dart` (the only file using Gemini) |
+| `lib/cloud/` | the only folder using Firebase: `account.dart` (Google account or guest), `firebase_auth_backend.dart` (sign-in, profile), `firestore_history_store.dart` (saved conversations), `firestore_gesture_store.dart` (gesture backup), `firestore_note_store.dart` (Listen notes), `gemini_summarizer.dart` and `gemini_quiz_maker.dart` (the only two files using Gemini / `firebase_ai`) |
 | `lib/signer/` | words → BIM signs: the sign dictionary, the translator and the clip player |
 | `lib/history/` | the conversation shown as chat bubbles (`conversation_log.dart`) and its history (`conversation_history.dart`: when a conversation starts and ends, where it is saved) |
 | `lib/theme/app_theme.dart` | all colours, gradients, fonts, spacing, radii and shadows |
 | `lib/ui/` | shared widgets (hero panel, glove card, hand-sensor visual, motion) |
-| `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice) |
+| `lib/app_storage.dart` | saved data (custom gestures, BM/EN choice, Learn progress) |
 | `firmware/` | ESP32 firmware and the BLE noise check |
-| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones; `frame_rate.py` measures how smooth the app runs on a phone |
-| `test/` | 189 tests, including parity and replays of real recordings (`test/fixtures/`) |
+| `tools/` | custom-gesture matcher validation (Python); `make_app_icon.dart` draws the launcher icon from the in-app logo (`flutter test tools/make_app_icon.dart`); `make_placeholder_clips.py` makes the test sign clips; `make_sign_clips.py` and `blender/render_signs.py` make the real ones; `frame_rate.py` measures how smooth the app runs on a phone; `export_finger_targets.py` makes Sign Quest's finger guides from the training data |
+| `test/` | 245 tests, including parity and replays of real recordings (`test/fixtures/`) |
 
 ## Build and run
 
@@ -524,6 +692,14 @@ regenerates `lib/ml/signsuara_model.dart`, `test/parity_cases.json` and
 `flutter test` fails until the words are added. No other code changes are needed: the app
 never hardcodes the labels, the number of classes or the window size.
 
+For Learn mode (both optional; the sign is recognised without them):
+- **Sign Quest asks for it once the avatar can show it:** add its clip as `assets/signs/<id>.webp`,
+  where the id is the label in snake_case (`TerimaKasih` → `terima_kasih`; one letter `A` →
+  `letter_a`), then `flutter clean` (see "Signer"). The clip also joins Teka Isyarat.
+- **Its finger guide** (the yellow lines in Sign Quest): `python tools/export_finger_targets.py`
+  prints the averages of all training rows per sign; paste its output over `kSignFingerTargets`
+  in `lib/learn/sign_targets.dart`. Without an entry the meter shows the fingers without a guide.
+
 ## Limitations and future work
 
 - **Single user**: the model is trained on one person's recordings. Supporting other users would
@@ -549,8 +725,10 @@ never hardcodes the labels, the number of classes or the window size.
 | `firebase_core`, `firebase_auth`, `cloud_firestore` | Firebase: sign-in, cloud data | BSD-3-Clause |
 | `google_sign_in` | Google account picker | BSD-3-Clause |
 | `firebase_storage` | profile photos | BSD-3-Clause |
-| `firebase_ai` | Gemini summaries of notes (Firebase AI Logic) | Apache-2.0 |
+| `firebase_ai` | Gemini summaries of notes and quizzes from notes (Firebase AI Logic) | Apache-2.0 |
 | `firebase_app_check` | App Check: proves requests come from this app on an allowed phone | BSD-3-Clause |
 | `image_picker` | take or choose a profile photo | Apache-2.0 / BSD-3-Clause |
+| `flutter_animate` (+ `flutter_shaders`, which it uses) | Learn mode's short bounces, shakes and floats | BSD-3-Clause |
+| `confetti` | Learn mode's confetti for a perfect score or a new level | MIT |
 | BIM signer character | "FREE MODEL 青髪三つ編みメガネっ子" by 水銀メイド (VRoid Hub); only rendered clips are included | VRoid Hub conditions set by the author (credit required, no redistribution of the model) |
 | Sora, Plus Jakarta Sans | fonts, bundled in `assets/fonts/` so the app works offline; their licence text is in the app too (Profile → About → View licenses) | SIL Open Font License 1.1 |

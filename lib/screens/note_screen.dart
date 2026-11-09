@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
+import '../learn/gemini_quiz_screen.dart';
+import '../learn/note_lesson_screen.dart';
+import '../learn/teka_isyarat.dart';
 import '../listen/listen_note.dart';
 import '../listen/listen_session.dart';
 import '../listen/note_summary.dart';
@@ -212,6 +215,12 @@ class _NoteScreenState extends State<NoteScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Copied: $detail')));
   }
 
+  /// Learn's Gemini Quiz for this note; afterwards the card shows whether one is kept now.
+  Future<void> _quiz(ListenNote note, {bool fresh = false}) async {
+    await startNoteQuiz(context, services, note, fresh: fresh);
+    if (mounted) setState(() {});
+  }
+
   Future<void> _delete(ListenNote note) async {
     final navigator = Navigator.of(context);
     if (await deleteNote(context, services, note)) navigator.pop();
@@ -281,6 +290,11 @@ class _NoteScreenState extends State<NoteScreen> {
                                   onToggle: (action) => _toggle(note, action),
                                   onCopy: _copyDetail,
                                   onSeeSaid: () => _show(_Side.said),
+                                  quizSaved: services.savedQuiz(note.id) != null,
+                                  onQuiz: () => _quiz(note),
+                                  onNewQuiz: () => _quiz(note, fresh: true),
+                                  signsHeard: [for (final s in heardSigns(services, note)) signAnswer(s.id).text],
+                                  onLearnSigns: () => openNoteLesson(context, services, note),
                                 ),
                               ),
                       ),

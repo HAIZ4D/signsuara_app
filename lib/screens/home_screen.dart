@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 
 import '../app/app_services.dart';
 import '../glove/glove_session.dart';
+import '../learn/learn_progress.dart';
+import '../learn/learn_screen.dart';
+import '../learn/learn_ui.dart';
 import '../listen/listen_note.dart';
 import '../theme/app_theme.dart';
 import '../ui/time_label.dart';
@@ -129,6 +132,17 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpace.gutter, 10, AppSpace.gutter, 0),
+              child: FadeUp(
+                delay: const Duration(milliseconds: 480),
+                child: _LearnCard(
+                  learn: services.learn,
+                  onTap: () => Navigator.of(context)
+                      .push(MaterialPageRoute<void>(builder: (_) => LearnScreen(services: services))),
+                ),
               ),
             ),
             Padding(
@@ -360,6 +374,65 @@ class _Tile extends StatelessWidget {
                       maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14)),
                   Text(subtitle,
                       maxLines: 1, overflow: TextOverflow.ellipsis, style: AppText.small.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The way into Learn mode (the capsule nav has no room for a 6th tab), in the tiles' style, with
+/// the real level and XP.
+class _LearnCard extends StatelessWidget {
+  const _LearnCard({required this.learn, required this.onTap});
+
+  final LearnProgress learn;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final detail = 'Level ${learn.level} · ${learn.xp} XP';
+    return Semantics(
+      button: true,
+      label: 'Learn BIM, games to learn signs, $detail',
+      excludeSemantics: true,
+      child: Container(
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(22), boxShadow: AppShadows.card),
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(22),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(22),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(AppSpace.m, 14, AppSpace.s, 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(color: AppColors.yellowWash, borderRadius: BorderRadius.circular(14)),
+                    child: const Icon(Icons.school_rounded, size: 22, color: AppColors.onYellowInk),
+                  ),
+                  const SizedBox(width: AppSpace.m),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Learn BIM', style: AppText.strong.copyWith(color: AppColors.ink, fontSize: 14)),
+                        Text('Games to learn signs · $detail',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.small.copyWith(color: AppColors.inkSoft, fontSize: 11.5)),
+                        const SizedBox(height: 6),
+                        XpBar(progress: learn, track: AppColors.surface2, height: 5),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, color: AppColors.inkFaint),
                 ],
               ),
             ),
